@@ -1,0 +1,17 @@
+useDynLib(IRTC, .registration=TRUE)
+
+importFrom(Rcpp, evalCpp)
+importFrom(stats, dnorm, pnorm, qnorm, rnorm, sd, var, weighted.mean,
+           optim, optimize, terms, model.matrix, na.omit, aggregate,
+           cov2cor, runif)
+importFrom(utils, packageDescription, flush.console)
+importFrom(methods, is)
+importFrom(MASS, ginv, mvrnorm)
+
+export(irtc.mml)
+export(irtc.mml.2pl)
+
+S3method(summary, irtc)
+S3method(print, irtc)
+S3method(logLik, irtc)
+S3method(anova, irtc)

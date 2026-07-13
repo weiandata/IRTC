@@ -1,0 +1,10 @@
+# IRTC
+# Copyright (C) 2026 WEIAN DATA TECH (Beijing) Co., Ltd.
+# SPDX-License-Identifier: GPL-2.0-or-later
+# See inst/COPYRIGHTS for licensing details.
+
+## Rcpp / RcppArmadillo are linked automatically via LinkingTo; the explicit
+## Rcpp:::LdFlags() call has been unnecessary since 2013 (and is being removed).
+CXX_STD = CXX17
+PKG_CPPFLAGS = -DBOOST_NO_LONG_LONG -DBOOST_NO_AUTO_PTR -DRCPP_USE_UNWIND_PROTECT
+PKG_LIBS = -pthread

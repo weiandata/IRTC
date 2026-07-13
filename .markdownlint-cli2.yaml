@@ -1,0 +1,14 @@
+config:
+  MD013: false
+  MD024:
+    siblings_only: true
+  MD025: false
+
+ignores:
+  - .git/**
+  # Historical development records and user manuals are kept verbatim and are
+  # not linted.
+  - docs/development/**
+  - docs/manuals/**
+  - docs/cran-submission-guide-zh.md
+  - scripts/sp5_threading_notes.md

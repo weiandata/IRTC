@@ -1,0 +1,11 @@
+test_that("streaming results are stable across thread counts and reproducible", {
+  d <- sp4_simulate(N = 4000, I = 16, D = 2, maxK = 2, seed = 1)
+  m1  <- IRTC:::irtc_proto_run_and_build(d$resp, d$dim_of, maxK = 2, Q = 21, n_threads = 1)
+  m2  <- IRTC:::irtc_proto_run_and_build(d$resp, d$dim_of, maxK = 2, Q = 21, n_threads = 2)
+  m2b <- IRTC:::irtc_proto_run_and_build(d$resp, d$dim_of, maxK = 2, Q = 21, n_threads = 2)
+  # thread-count independence (kernel reduces partial sums across threads -> ~1e-9)
+  expect_equal(m1$a, m2$a, tolerance = 1e-8)
+  expect_equal(m1$variance[1, 2], m2$variance[1, 2], tolerance = 1e-8)
+  # repeat stability (same thread count -> bit-identical)
+  expect_equal(m2$a, m2b$a, tolerance = 1e-12)
+})

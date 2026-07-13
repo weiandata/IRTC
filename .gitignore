@@ -1,0 +1,21 @@
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Editor settings
+.vscode/
+.idea/
+*.Rproj
+.Rproj.user/
+
+# Local environment and secrets
+.env
+
+# R session and build artifacts
+.Rhistory
+.RData
+IRTC.Rcheck/
+*.tar.gz
+src/*.o
+src/*.so
+src/*.dll

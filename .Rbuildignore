@@ -1,0 +1,19 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^\.DS_Store$
+^AGENTS\.md$
+# Repository-level files not part of the R package build
+^\.github$
+^\.editorconfig$
+^\.gitignore$
+^\.markdownlint-cli2\.yaml$
+^CHANGELOG\.md$
+^CODEOWNERS$
+^CONTRIBUTING\.md$
+^LICENSE$
+^README\.md$
+^SECURITY\.md$
+^docs$
+^examples$
+^scripts$
+^cran-comments[.]md$
