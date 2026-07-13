@@ -13,7 +13,7 @@ measured approximation error; exact full-grid estimation remains the default.
 
 Copyright (C) 2026 WEIAN DATA TECH (Beijing) Co., Ltd.
 
-- Company contact: contact@weiandata.com
+- Company contact: <contact@weiandata.com>
 - Maintainer: Kunxiang Ma <makunxiang@weiandata.com>
 
 IRTC is distributed under GPL (>= 2). MASS, mvtnorm, and sfsmisc are external

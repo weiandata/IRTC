@@ -20,7 +20,7 @@ mvtnorm and sfsmisc are used conditionally from Suggests. Their source code is
 not bundled in IRTC.
 
 Maintainer: Kunxiang Ma <makunxiang@weiandata.com>
-Company contact: contact@weiandata.com
+Company contact: <contact@weiandata.com>
 
 ## Downstream dependencies
 

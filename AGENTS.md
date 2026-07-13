@@ -1,1 +1,1 @@
-## Imported Claude Cowork project instructions
+# Imported Claude Cowork project instructions

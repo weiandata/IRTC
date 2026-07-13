@@ -10,7 +10,7 @@ external counsel.
 ## Identity and ownership
 
 - Copyright holder: WEIAN DATA TECH (Beijing) Co., Ltd.
-- Company contact: contact@weiandata.com
+- Company contact: <contact@weiandata.com>
 - Author and maintainer: Kunxiang Ma <makunxiang@weiandata.com>
 - Package license: GPL (>= 2)
 - Per-file source identifier: `SPDX-License-Identifier: GPL-2.0-or-later`
@@ -29,10 +29,10 @@ function, project URL, and license family for each dependency.
 
 The review uses these official sources:
 
-- GNU General Public License v2.0: https://www.gnu.org/licenses/gpl2.html
-- GNU licensing FAQ: https://www.gnu.org/licenses/gpl-faq.en.html
-- CRAN Repository Policy: https://cran.r-project.org/web/packages/policies.html
-- Writing R Extensions: https://cran.r-project.org/doc/manuals/r-release/R-exts.html
+- GNU General Public License v2.0: <https://www.gnu.org/licenses/gpl2.html>
+- GNU licensing FAQ: <https://www.gnu.org/licenses/gpl-faq.en.html>
+- CRAN Repository Policy: <https://cran.r-project.org/web/packages/policies.html>
+- Writing R Extensions: <https://cran.r-project.org/doc/manuals/r-release/R-exts.html>
 
 The resulting repository keeps the full GPL terms, provides corresponding
 IRTC source, identifies ownership consistently, and does not add distribution

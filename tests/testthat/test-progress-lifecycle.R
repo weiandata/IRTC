@@ -68,7 +68,9 @@ test_that("package lifecycle helpers expose version and alignment text", {
     info <- IRTC:::version("IRTC")
     expect_match(info, "^IRTC [^ ]+  ")
     expect_match(
-        info, normalizePath(dirname(system.file(package="IRTC"))), fixed=TRUE
+        info,
+        normalizePath(dirname(system.file(package="IRTC")), winslash="/"),
+        fixed=TRUE
     )
     expect_identical(IRTC:::xx(2, 3), "  =   ")
     expect_message(IRTC:::.onAttach(NULL, "IRTC"), "\\* IRTC")

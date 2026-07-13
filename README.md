@@ -121,4 +121,4 @@ listed in [SECURITY.md](SECURITY.md).
 
 IRTC is distributed under GPL (>= 2). See [LICENSE](LICENSE) and
 [`inst/COPYRIGHTS`](inst/COPYRIGHTS). Copyright in IRTC is held by WEIAN DATA
-TECH (Beijing) Co., Ltd. Company contact: contact@weiandata.com.
+TECH (Beijing) Co., Ltd. Company contact: <contact@weiandata.com>.
