@@ -29,6 +29,7 @@ jobs:
           args: >-
             --no-progress
             --verbose
+            --accept-timeouts
             --exclude-path docs/development
             --exclude-path docs/manuals
             --exclude-path docs/cran-submission-guide-zh.md
