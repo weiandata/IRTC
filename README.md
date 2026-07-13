@@ -5,7 +5,7 @@ surveys, assessments and scale analysis.
 
 Status: Active
 
-Owner: WeianData Engineering
+Owner: WEIAN DATA Engineering
 
 ## Project Overview
 

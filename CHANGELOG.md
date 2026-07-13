@@ -7,6 +7,10 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+- Expanded `inst/COPYRIGHTS` to document the copyright boundary for all direct
+  runtime, linking, and optional dependencies.
+- Standardized the repository owner identity as WEIAN DATA.
+
 ### Added
 
 - Add future changes here before release.

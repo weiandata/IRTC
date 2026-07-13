@@ -22,6 +22,16 @@ Functions used: ginv, mvrnorm
 Upstream project: https://CRAN.R-project.org/package=MASS
 License: GPL-2 | GPL-3
 
+Package: Rcpp
+Use: generated native interfaces and R/C++ runtime integration
+Upstream project: https://CRAN.R-project.org/package=Rcpp
+License: GPL (>= 2)
+
+Package: RcppArmadillo
+Use: compilation headers and linear algebra integration
+Upstream project: https://CRAN.R-project.org/package=RcppArmadillo
+License: GPL (>= 2)
+
 Package: mvtnorm
 Function used: dmvnorm
 Upstream project: https://CRAN.R-project.org/package=mvtnorm
