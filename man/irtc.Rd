@@ -16,9 +16,9 @@ full control because all additional arguments are passed unchanged to
 \code{"GPCM"}).
 }
 \usage{
-irtc(data, model, key = NULL, rules = NULL, id = NULL, sheet = 1,
-    missing_codes = c(-9, -99, 99, 999), check = TRUE, quality = TRUE,
-    verbose = TRUE, ...)
+irtc(data, model, key = NULL, rules = NULL, id = NULL, weights = NULL,
+    sheet = 1, missing_codes = c(-9, -99, 99, 999), check = TRUE,
+    quality = TRUE, verbose = TRUE, ...)
 }
 \arguments{
 \item{data}{A file path (\code{.xlsx}, \code{.xls}, \code{.csv},
@@ -34,6 +34,12 @@ irtc(data, model, key = NULL, rules = NULL, id = NULL, sheet = 1,
     \code{\link{irtc_score}}.}
 \item{id}{An optional person identifier column (name or index); passed to
     \code{\link{irtc_read}}.}
+\item{weights}{An optional sampling weight column (name or index); passed
+    to \code{\link{irtc_read}}. Common weight column names are also
+    detected automatically. The weights are used as \code{pweights} in the
+    estimation; if \code{pweights} is also supplied through \code{\dots},
+    the explicit \code{pweights} wins and a warning (\code{W418}) is
+    raised.}
 \item{sheet}{Excel sheet to read (number or name).}
 \item{missing_codes}{Numeric values recoded to \code{NA} during cleaning;
     see \code{\link{irtc_read}}.}

@@ -10,8 +10,8 @@
 ## Professional users keep full control through '...' which is passed to
 ## irtc.mml() / irtc.mml.2pl() unchanged.
 
-irtc <- function(data, model, key=NULL, rules=NULL, id=NULL, sheet=1,
-    missing_codes=c(-9, -99, 99, 999), check=TRUE, quality=TRUE,
+irtc <- function(data, model, key=NULL, rules=NULL, id=NULL, weights=NULL,
+    sheet=1, missing_codes=c(-9, -99, 99, 999), check=TRUE, quality=TRUE,
     verbose=TRUE, ...)
 {
     ## --- model argument ---------------------------------------------------
@@ -53,7 +53,7 @@ irtc <- function(data, model, key=NULL, rules=NULL, id=NULL, sheet=1,
     if (inherits(data, "irtc_data")) {
         data_obj <- data
     } else {
-        data_obj <- irtc_read(data, sheet=sheet, id=id,
+        data_obj <- irtc_read(data, sheet=sheet, id=id, weights=weights,
             missing_codes=missing_codes, verbose=FALSE)
     }
 
@@ -117,8 +117,24 @@ irtc <- function(data, model, key=NULL, rules=NULL, id=NULL, sheet=1,
     ## --- estimate ------------------------------------------------------------
     pid <- data_obj$pid
     fit_fun <- if (model %in% c("2PL", "GPCM")) irtc.mml.2pl else irtc.mml
+    fit_args <- c(list(resp=resp, irtmodel=model, pid=pid, verbose=verbose),
+        list(...))
+    if (!is.null(data_obj$weights)) {
+        if ("pweights" %in% names(fit_args)) {
+            irtc_warn(code="W418",
+                en=paste0("Both a weights column (from the data) and an ",
+                    "explicit 'pweights' argument were supplied; using ",
+                    "'pweights' and ignoring the weights column."),
+                zh=paste0("\u6570\u636e\u4e2d\u5e26\u6709\u6743\u91cd\u5217\uff0c\u540c\u65f6\u53c8\u663e\u5f0f\u63d0\u4f9b\u4e86 'pweights' \u53c2\u6570\uff1b\u5c06\u4f7f\u7528 'pweights'\uff0c\u5ffd\u7565\u6743\u91cd\u5217\u3002"),
+                fix_en="Supply only one of the two.",
+                fix_zh="\u8bf7\u53ea\u63d0\u4f9b\u5176\u4e2d\u4e00\u79cd\u6743\u91cd\u3002",
+                class="irtc_warning_estimation")
+        } else {
+            fit_args$pweights <- data_obj$weights
+        }
+    }
     mod <- tryCatch(
-        fit_fun(resp=resp, irtmodel=model, pid=pid, verbose=verbose, ...),
+        do.call(fit_fun, fit_args),
         error=function(e) {
             if (inherits(e, "irtc_error")) stop(e)
             irtc_stop(code="E408",

@@ -17,11 +17,12 @@ Every cleaning action is recorded in a bilingual log attached to the
 returned object, so results remain traceable.
 }
 \usage{
-irtc_read(x, sheet = 1, id = NULL,
+irtc_read(x, sheet = 1, id = NULL, weights = NULL,
     missing_codes = c(-9, -99, 99, 999),
     na_strings = c("", "NA", "N/A", "n/a", ".", "*",
         "缺失", "无", "空"),
-    guess_id = TRUE, clean = TRUE, recode = TRUE, verbose = TRUE)
+    guess_id = TRUE, guess_weights = TRUE, clean = TRUE, recode = TRUE,
+    verbose = TRUE)
 
 \method{print}{irtc_data}(x, lang = irtc_lang(), \dots)
 }
@@ -39,7 +40,15 @@ irtc_read(x, sheet = 1, id = NULL,
     when it lies clearly above the observed response range, which protects
     e.g. a legitimate score of 99 on a 0-100 scale.}
 \item{na_strings}{Strings treated as missing in text columns.}
+\item{weights}{Sampling weight column, by name or index. If \code{NULL}
+    and \code{guess_weights} is \code{TRUE}, common weight column names
+    (\code{weight}, \code{wt}, \code{pweight}, 权重, 样本权重, etc., in
+    English and Chinese) are detected automatically. The column is set
+    aside as \code{$weights} and later used as \code{pweights} by
+    \code{\link{irtc}}. Weights must be positive numbers; missing weights
+    are set to 1 with a warning.}
 \item{guess_id}{Logical: detect the person ID column automatically?}
+\item{guess_weights}{Logical: detect the weight column automatically?}
 \item{clean}{Logical: apply the cleaning steps (drop empty rows/columns,
     convert numeric-like text, recode missing codes)?}
 \item{recode}{Logical: recode integer response categories to consecutive
@@ -51,7 +60,8 @@ irtc_read(x, sheet = 1, id = NULL,
 \value{
 An object of class \code{irtc_data}: a list with components \code{resp}
 (cleaned response data frame), \code{pid} (person IDs or \code{NULL}),
-\code{dropped} (set-aside non-response columns), \code{log} (cleaning log
+\code{weights} (sampling weights or \code{NULL}), \code{dropped}
+(set-aside non-response columns), \code{log} (cleaning log
 data frame with columns \code{step}, \code{code}, \code{message_en},
 \code{message_zh}) and \code{source}.
 }
