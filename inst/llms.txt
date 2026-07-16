@@ -16,7 +16,17 @@ or "en". Machine-readable schemas never depend on the language option.
 3. mod <- irtc(data, model="1PL")          # model is REQUIRED: "1PL"|"Rasch"|
                                            # "2PL"|"PCM"|"PCM2"|"RSM"|"GPCM".
                                            # Raw A/B/C/D answers: add
-                                           # key=c(Q1="A", Q2="C", ...)
+                                           # key=c(Q1="A", Q2="C", ...) or a
+                                           # key-file path (optional
+                                           # partial_answer column -> partial
+                                           # credit full=2/partial=1/other=0).
+                                           # Sampling weights: weights=<col>
+                                           # (auto-detected too) -> pweights.
+                                           # Q matrix: q="qmatrix.xlsx" (or a
+                                           # data.frame). See irtc_read_q().
+                                           # rare_categories="collapse"
+                                           # (default) | "prior" for score
+                                           # categories nobody reached.
 4. res <- irtc_results(mod)                # stable tidy schema (see below)
    irtc_json(mod, "results.json")          # same content as JSON
 5. irtc_excel(mod, dir="out")              # 3 xlsx files: item quality /
@@ -27,20 +37,31 @@ or "en". Machine-readable schemas never depend on the language option.
 
 Low-level (expert) API, unchanged since 0.1.0: irtc.mml(), irtc.mml.2pl(),
 summary(), anova(), logLik(). irtc() returns the same 'irtc' object enriched
-with $usability (ctt, itemfit, quality, data_log, check).
+with $usability (ctt, itemfit, quality, data_log, check, q, q_only_items,
+score_info, weights, rare_categories, rare_mode).
 
-## irtc_results(mod) schema v1.0 (list of data frames)
+Q matrix helpers: irtc_read_q("q.xlsx") -> irtc_qmatrix (item-by-dimension
+matrix; dimension column headers become person-output dimension names;
+optional partial-credit/max-score column). irtc_align_q(data, q,
+on_mismatch="warn"|"error") intersects Q items with the data items
+(warnings W420 Q-only / W421 data-only).
+
+## irtc_results(mod) schema v1.1 (list of data frames; additive over 1.0)
 
 - model_info (1 row): schema_version, package_version, model, n_persons,
   n_items, n_dimensions, deviance, n_parameters, aic, bic, eap_reliability,
-  iterations
+  iterations, dimension_names (pipe-separated; only when a Q matrix was used)
 - items (1 row per item): item_id, model, n_obs, p_value, slope_a,
-  difficulty_b, se_b, tau_k..., discr_ctt, outfit, infit,
+  difficulty_b, se_b, tau_k..., (polytomous only) b_partial/b_full or
+  b_step1..b_stepK, discr_ctt, outfit, infit,
   rating (good|acceptable|review|revise), reasons_en, reasons_zh,
-  advice_en, advice_zh
+  advice_en, advice_zh, status (estimated|dropped_no_response|
+  declared_not_estimated), and when categories were rare:
+  max_score_declared, max_score_observed, categories_unobserved,
+  categories_collapsed, prior_dominated
 - persons (1 row per person, same order as input rows): person_id,
-  n_answered, raw_score, eap[_dimD], se[_dimD], percentile[_dimD],
-  t_score[_dimD]
+  n_answered, raw_score, eap[_dimD or _<dimname>], se[...], percentile[...],
+  t_score[...] (headers use Q dimension names when a Q matrix was supplied)
 - cleaning_log: step, code, message_en, message_zh
 - check_issues: code, severity (error|warning|info), scope, where,
   message_en, message_zh, fix_en, fix_zh

@@ -9,8 +9,20 @@ Last updated: 2026-07-17. Current work: **V1.1** on branch `v1.1-dev`.
 - 1.0.0: verified, CRAN-ready (`IRTC_1.0.0.tar.gz`). Plan:
   `docs/v1.0-release-plan-zh.md`; verification: `docs/release-status.md`;
   pipeline: `scripts/verify-release-1.0.R`.
-- 1.1.0: **planning complete, implementation not started.** Full task
-  goals and execution details: `docs/v1.1-plan-zh.md`. Read it first.
+- 1.1.0: **all modules M1-M6 implemented on `v1.1-dev`; full
+  verification not yet run** (no R toolchain in the authoring
+  environment). Plan: `docs/v1.1-plan-zh.md`; status:
+  `docs/release-status.md`. Next step: run
+  `Rscript scripts/verify-release-1.1.R` on the maintainer machine and
+  fix any test/coverage/check shortfalls it reports.
+
+Implemented in 1.1.0 (new files `R/irtc_qmatrix.R`,
+`R/irtc_rare_categories.R`; new tests `test-read-weights.R`,
+`test-qmatrix.R`, `test-score-partial.R`, `test-rare-categories.R`,
+`test-output-semantics.R`, `test-report-diagnostics.R`; DESCRIPTION
+1.1.0; NEWS.md, inst/llms.txt, man/*.Rd updated). New exports:
+`irtc_read_q`, `irtc_align_q` (+ `print.irtc_qmatrix`). Condition codes
+added: E107-E115, W117, W418-W426, I115/I116, I130-I132, I202, E207/E208.
 
 ## V1.1 scope (user-confirmed 2026-07-17)
 

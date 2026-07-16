@@ -1,5 +1,29 @@
 # IRTC Release Status
 
+## 1.1.0 (in development, branch v1.1-dev)
+
+1.1.0 is a usability release for the GPCM / multidimensional workflow on
+top of the verified 1.0.0 core. New behaviour (all in the usability
+layer, estimation core untouched, no new dependencies): sampling-weight
+import in `irtc_read()`; Q-matrix import and alignment (`irtc_read_q()`,
+`irtc_align_q()`, `irtc(q=)`); answer-key/rules from files with
+partial-credit key scoring; `rare_categories` handling of unobserved
+score categories (collapse default, prior optional); semantic GPCM
+difficulty labels and Q-dimension person headers (`irtc_results` schema
+1.1, additive); and Model-diagnostics + Data-transparency report
+sections.
+
+Plan: `docs/v1.1-plan-zh.md`. Acceptance follows the 1.0 policy and is
+wired into `scripts/verify-release-1.1.R` (tests green with expected
+warnings asserted; coverage overall >= 90% and touched key files
+>= 95% incl. `irtc_qmatrix.R`, `irtc_rare_categories.R`, `irtc_report.R`;
+`R CMD check --as-cran --no-manual` 0 ERROR / 0 WARNING; extended
+end-to-end GPCM smoke covering weights + Q matrix + partial-credit key
+under both rare-category modes plus an extreme-data case). Run
+`Rscript scripts/verify-release-1.1.R` from the repository root on the
+maintainer machine; **not yet executed** (no R toolchain in the
+authoring environment).
+
 ## 1.0.0 (verified 2026-07-17, ready for CRAN submission)
 
 Verification results (scripts/verify-release-1.0.R on macOS Tahoe 26.5.2,
