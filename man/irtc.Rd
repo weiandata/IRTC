@@ -16,7 +16,8 @@ full control because all additional arguments are passed unchanged to
 \code{"GPCM"}).
 }
 \usage{
-irtc(data, model, key = NULL, rules = NULL, id = NULL, weights = NULL,
+irtc(data, model, key = NULL, rules = NULL, q = NULL,
+    on_mismatch = c("warn", "error"), id = NULL, weights = NULL,
     sheet = 1, missing_codes = c(-9, -99, 99, 999), check = TRUE,
     quality = TRUE, verbose = TRUE, ...)
 }
@@ -32,6 +33,15 @@ irtc(data, model, key = NULL, rules = NULL, id = NULL, weights = NULL,
     \code{\link{irtc_score}}.}
 \item{rules}{An optional partial-credit scoring table; see
     \code{\link{irtc_score}}.}
+\item{q}{An optional Q (item-by-dimension) matrix: a file path, data
+    frame, matrix, or an object from \code{\link{irtc_read_q}}. The Q
+    matrix is aligned with the data via \code{\link{irtc_align_q}} and
+    passed to the estimation as \code{Q}; its dimension names label the
+    person-level output. If \code{Q} is also supplied through
+    \code{\dots}, the explicit \code{Q} wins and a warning (\code{W419})
+    is raised.}
+\item{on_mismatch}{How to handle items that differ between the Q matrix
+    and the data; see \code{\link{irtc_align_q}}.}
 \item{id}{An optional person identifier column (name or index); passed to
     \code{\link{irtc_read}}.}
 \item{weights}{An optional sampling weight column (name or index); passed

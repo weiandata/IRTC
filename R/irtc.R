@@ -10,7 +10,8 @@
 ## Professional users keep full control through '...' which is passed to
 ## irtc.mml() / irtc.mml.2pl() unchanged.
 
-irtc <- function(data, model, key=NULL, rules=NULL, id=NULL, weights=NULL,
+irtc <- function(data, model, key=NULL, rules=NULL, q=NULL,
+    on_mismatch=c("warn", "error"), id=NULL, weights=NULL,
     sheet=1, missing_codes=c(-9, -99, 99, 999), check=TRUE, quality=TRUE,
     verbose=TRUE, ...)
 {
@@ -60,6 +61,16 @@ irtc <- function(data, model, key=NULL, rules=NULL, id=NULL, weights=NULL,
     ## --- score raw responses ------------------------------------------------
     if (!is.null(key) || !is.null(rules)) {
         data_obj <- irtc_score(data_obj, key=key, rules=rules)
+    }
+
+    ## --- Q matrix: read and align against the data ---------------------------
+    qobj <- NULL
+    if (!is.null(q)) {
+        on_mismatch <- match.arg(on_mismatch)
+        qobj <- if (inherits(q, "irtc_qmatrix")) q else irtc_read_q(q)
+        aligned <- irtc_align_q(data_obj, qobj, on_mismatch=on_mismatch)
+        data_obj <- aligned$data
+        qobj <- aligned$q
     }
 
     ## --- pre-estimation check ----------------------------------------------
@@ -119,6 +130,20 @@ irtc <- function(data, model, key=NULL, rules=NULL, id=NULL, weights=NULL,
     fit_fun <- if (model %in% c("2PL", "GPCM")) irtc.mml.2pl else irtc.mml
     fit_args <- c(list(resp=resp, irtmodel=model, pid=pid, verbose=verbose),
         list(...))
+    if (!is.null(qobj)) {
+        if ("Q" %in% names(fit_args)) {
+            irtc_warn(code="W419",
+                en=paste0("Both 'q' and an explicit 'Q' argument were ",
+                    "supplied; using 'Q' and ignoring 'q'."),
+                zh=paste0("\u540c\u65f6\u63d0\u4f9b\u4e86 'q' \u548c\u663e\u5f0f\u7684 'Q' \u53c2\u6570\uff1b\u5c06\u4f7f\u7528 'Q'\uff0c\u5ffd\u7565 'q'\u3002"),
+                fix_en="Supply only one of the two.",
+                fix_zh="\u8bf7\u53ea\u63d0\u4f9b\u5176\u4e2d\u4e00\u4e2a\u3002",
+                class="irtc_warning_estimation")
+        } else {
+            ## items dropped just above must leave the Q matrix as well
+            fit_args$Q <- qobj$Q[colnames(resp), , drop=FALSE]
+        }
+    }
     if (!is.null(data_obj$weights)) {
         if ("pweights" %in% names(fit_args)) {
             irtc_warn(code="W418",
@@ -154,7 +179,7 @@ irtc <- function(data, model, key=NULL, rules=NULL, id=NULL, weights=NULL,
 
     ## --- enrich with usability results ---------------------------------------
     usability <- list(model=model, data_log=data_obj$log,
-        check=check_obj, removed_items=bad_items)
+        check=check_obj, removed_items=bad_items, q=qobj)
     if (quality) {
         usability$ctt <- tryCatch(irtc_ctt(resp), error=function(e) NULL)
         usability$itemfit <- tryCatch(irtc_itemfit(mod, resp=resp),
