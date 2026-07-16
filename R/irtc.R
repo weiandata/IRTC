@@ -66,12 +66,14 @@ irtc <- function(data, model, key=NULL, rules=NULL, q=NULL,
 
     ## --- Q matrix: read and align against the data ---------------------------
     qobj <- NULL
+    q_only_items <- character(0)
     if (!is.null(q)) {
         on_mismatch <- match.arg(on_mismatch)
         qobj <- if (inherits(q, "irtc_qmatrix")) q else irtc_read_q(q)
         aligned <- irtc_align_q(data_obj, qobj, on_mismatch=on_mismatch)
         data_obj <- aligned$data
         qobj <- aligned$q
+        q_only_items <- aligned$q_only
 
         ## consistency between the Q partial-credit declaration and the
         ## scoring actually applied
@@ -250,6 +252,7 @@ irtc <- function(data, model, key=NULL, rules=NULL, q=NULL,
     ## --- enrich with usability results ---------------------------------------
     usability <- list(model=model, data_log=data_obj$log,
         check=check_obj, removed_items=bad_items, q=qobj,
+        q_only_items=q_only_items,
         rare_categories=rare$info,
         rare_mode=rare_categories)
     if (quality) {

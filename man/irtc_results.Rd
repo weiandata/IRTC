@@ -12,14 +12,21 @@ Column names are fixed English snake_case identifiers and never depend on
 the language option. \code{irtc_json} exports the same content as JSON
 (requires the optional \pkg{jsonlite} package).
 
-Schema v1.0 components: \code{model_info} (one row: schema and package
-version, model, sizes, deviance, AIC/BIC, EAP reliability, iterations),
+Schema v1.1 components: \code{model_info} (one row: schema and package
+version, model, sizes, deviance, AIC/BIC, EAP reliability, iterations,
+and \code{dimension_names} when a Q matrix was supplied),
 \code{items} (per item: parameters, classical statistics, fit, quality
-rating and bilingual reasons/advice), \code{persons} (per person: ID,
-number answered, raw score, EAP, SE, percentile, T score),
-\code{cleaning_log} and \code{check_issues} (present when the model was
-fitted via \code{\link{irtc}}). See the package file \code{inst/llms.txt}
-for the full schema reference.
+rating and bilingual reasons/advice, plus a \code{status} column and,
+for polytomous items, semantic step difficulties and rare-category
+annotations), \code{persons} (per person: ID, number answered, raw
+score, EAP, SE, percentile, T score; ability/SE headers use the Q
+dimension names when available), \code{cleaning_log} and
+\code{check_issues} (present when the model was fitted via
+\code{\link{irtc}}). Schema 1.1 is additive over 1.0: existing column
+names and meanings are unchanged. Items declared in the Q matrix but not
+estimated keep a row with \code{status} \code{"dropped_no_response"} or
+\code{"declared_not_estimated"}. See the package file
+\code{inst/llms.txt} for the full schema reference.
 }
 \usage{
 irtc_results(mod, resp = NULL)

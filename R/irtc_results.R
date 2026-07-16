@@ -10,7 +10,7 @@
 ## snake_case identifiers and never depend on the language option.
 ## Schema version: irtc_results_schema_version.
 
-irtc_results_schema_version <- "1.0"
+irtc_results_schema_version <- "1.1"
 
 irtc_results <- function(mod, resp=NULL)
 {
@@ -43,6 +43,10 @@ irtc_results <- function(mod, resp=NULL)
         iterations=mod$iter,
         stringsAsFactors=FALSE
     )
+    dim_names_info <- irtc_dim_names(mod, mod$ndim)
+    if (!is.null(dim_names_info)) {
+        model_info$dimension_names <- paste(dim_names_info, collapse="|")
+    }
 
     ## --- items ---------------------------------------------------------------
     items <- tryCatch(irtc_param_table(mod, resp=resp),
@@ -74,6 +78,30 @@ irtc_results <- function(mod, resp=NULL)
             items <- items[match(item_order, items$item_id), , drop=FALSE]
             rownames(items) <- NULL
         }
+        items$status <- "estimated"
+    }
+
+    ## items declared in the Q matrix but removed before estimation
+    ## (nobody answered / zero variance) keep an annotated row so the
+    ## Q-matrix item set never silently disappears from the output
+    if (!is.null(items)) {
+        removed <- mod$usability$removed_items
+        q_only <- mod$usability$q_only_items
+        ## removed = dropped before estimation (no responses / zero
+        ## variance); q_only = declared in the Q matrix but absent from
+        ## the data. Both keep an annotated row so the declared item set
+        ## never silently disappears.
+        extra_items <- setdiff(c(removed, q_only), items$item_id)
+        extra_items <- extra_items[nzchar(extra_items)]
+        if (length(extra_items) > 0L) {
+            filler <- items[rep(NA_integer_, length(extra_items)), ,
+                drop=FALSE]
+            filler$item_id <- extra_items
+            filler$status <- ifelse(extra_items %in% removed,
+                "dropped_no_response", "declared_not_estimated")
+            items <- rbind(items, filler)
+            rownames(items) <- NULL
+        }
     }
 
     ## --- persons ----------------------------------------------------------------
@@ -86,9 +114,11 @@ irtc_results <- function(mod, resp=NULL)
         if (!is.null(resp)) p$n_answered <- rowSums(!is.na(resp))
         if (!is.null(mod$person$score)) p$raw_score <- mod$person$score
         if (!is.null(mod$person$max)) p$max_score <- mod$person$max
+        dim_names <- irtc_dim_names(mod, n_dim)
         sd_cols <- grep("^SD\\.EAP", colnames(mod$person), value=TRUE)
         for (d in seq_len(n_dim)) {
-            sfx <- if (n_dim > 1L) paste0("_dim", d) else ""
+            sfx <- if (!is.null(dim_names)) paste0("_", dim_names[d])
+                else if (n_dim > 1L) paste0("_dim", d) else ""
             v <- eap[, d]
             p[[paste0("eap", sfx)]] <- round(v, 4)
             if (length(sd_cols) >= d) {
