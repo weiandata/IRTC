@@ -29,10 +29,11 @@ irtc(data, model, key = NULL, rules = NULL, q = NULL,
 \item{model}{Required. One of \code{"1PL"} (alias \code{"Rasch"}),
     \code{"2PL"}, \code{"PCM"}, \code{"PCM2"}, \code{"RSM"},
     \code{"GPCM"}. Case-insensitive.}
-\item{key}{An optional answer key for raw responses; see
+\item{key}{An optional answer key for raw responses: a named vector or
+    a key-file path (optionally with a partial-answer column); see
     \code{\link{irtc_score}}.}
-\item{rules}{An optional partial-credit scoring table; see
-    \code{\link{irtc_score}}.}
+\item{rules}{An optional partial-credit scoring table or a path to one;
+    see \code{\link{irtc_score}}.}
 \item{q}{An optional Q (item-by-dimension) matrix: a file path, data
     frame, matrix, or an object from \code{\link{irtc_read_q}}. The Q
     matrix is aligned with the data via \code{\link{irtc_align_q}} and
