@@ -11,7 +11,8 @@
 ## irtc.mml() / irtc.mml.2pl() unchanged.
 
 irtc <- function(data, model, key=NULL, rules=NULL, q=NULL,
-    on_mismatch=c("warn", "error"), id=NULL, weights=NULL,
+    on_mismatch=c("warn", "error"),
+    rare_categories=c("collapse", "prior"), id=NULL, weights=NULL,
     sheet=1, missing_codes=c(-9, -99, 99, 999), check=TRUE, quality=TRUE,
     verbose=TRUE, ...)
 {
@@ -162,11 +163,43 @@ irtc <- function(data, model, key=NULL, rules=NULL, q=NULL,
             class="irtc_error_data_check")
     }
 
+    ## --- rare / unobserved score categories ----------------------------------
+    rare_categories <- match.arg(rare_categories)
+    dots <- list(...)
+    custom_design <- ("A" %in% names(dots)) ||
+        (model %in% c("PCM2", "RSM")) ||
+        (!is.null(dots$constraint) && !identical(dots$constraint, "cases"))
+    rare <- irtc_rare_apply(resp, q=qobj, mode=rare_categories,
+        model=model, custom_design=custom_design)
+    resp <- rare$resp
+    if (nrow(rare$log) > 0L) {
+        data_obj$log <- rbind(data_obj$log, rare$log)
+    }
+
     ## --- estimate ------------------------------------------------------------
     pid <- data_obj$pid
     fit_fun <- if (model %in% c("2PL", "GPCM")) irtc.mml.2pl else irtc.mml
     fit_args <- c(list(resp=resp, irtmodel=model, pid=pid, verbose=verbose),
         list(...))
+    if (!is.null(rare$fit_extra)) {
+        fx <- rare$fit_extra
+        if (!is.null(fx$xsi.fixed)) {
+            fit_args$xsi.fixed <- if (is.null(fit_args$xsi.fixed)) {
+                fx$xsi.fixed
+            } else {
+                rbind(fit_args$xsi.fixed, fx$xsi.fixed)
+            }
+        }
+        if (!is.null(fx$prior_list_xsi)) {
+            ctl <- if (is.null(fit_args$control)) list() else
+                fit_args$control
+            if (is.null(ctl$prior_list_xsi)) {
+                ctl$prior_list_xsi <- fx$prior_list_xsi
+                ctl$mstep_intercept_method <- "optim"
+            }
+            fit_args$control <- ctl
+        }
+    }
     if (!is.null(qobj)) {
         if ("Q" %in% names(fit_args)) {
             irtc_warn(code="W419",
@@ -216,7 +249,9 @@ irtc <- function(data, model, key=NULL, rules=NULL, q=NULL,
 
     ## --- enrich with usability results ---------------------------------------
     usability <- list(model=model, data_log=data_obj$log,
-        check=check_obj, removed_items=bad_items, q=qobj)
+        check=check_obj, removed_items=bad_items, q=qobj,
+        rare_categories=rare$info,
+        rare_mode=rare_categories)
     if (quality) {
         usability$ctt <- tryCatch(irtc_ctt(resp), error=function(e) NULL)
         usability$itemfit <- tryCatch(irtc_itemfit(mod, resp=resp),

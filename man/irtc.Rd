@@ -17,7 +17,8 @@ full control because all additional arguments are passed unchanged to
 }
 \usage{
 irtc(data, model, key = NULL, rules = NULL, q = NULL,
-    on_mismatch = c("warn", "error"), id = NULL, weights = NULL,
+    on_mismatch = c("warn", "error"),
+    rare_categories = c("collapse", "prior"), id = NULL, weights = NULL,
     sheet = 1, missing_codes = c(-9, -99, 99, 999), check = TRUE,
     quality = TRUE, verbose = TRUE, ...)
 }
@@ -43,6 +44,21 @@ irtc(data, model, key = NULL, rules = NULL, q = NULL,
     is raised.}
 \item{on_mismatch}{How to handle items that differ between the Q matrix
     and the data; see \code{\link{irtc_align_q}}.}
+\item{rare_categories}{How to handle score categories nobody reached
+    (nobody fully correct / partially correct / wrong).
+    \code{"collapse"} (default): merge unobserved categories into their
+    lower neighbour; the mapping is logged (\code{W425}) and annotated in
+    the item output (\code{categories_unobserved},
+    \code{categories_collapsed}, declared vs observed maximum score).
+    \code{"prior"}: keep the observed category structure; thresholds of
+    in-range empty categories get a N(0, 4) prior (models \code{"1PL"},
+    \code{"PCM"}) or are fixed at the prior mean 0 (models \code{"2PL"},
+    \code{"GPCM"}, whose estimation core does not evaluate priors); such
+    thresholds are marked \code{prior_dominated} in the output.
+    Categories above the observed maximum have no parameter in either
+    mode and are reported as a reduced maximum score. Items answered by
+    nobody are removed (\code{W410}) but keep an annotated row in
+    \code{\link{irtc_results}}.}
 \item{id}{An optional person identifier column (name or index); passed to
     \code{\link{irtc_read}}.}
 \item{weights}{An optional sampling weight column (name or index); passed
