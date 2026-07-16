@@ -1,5 +1,11 @@
 # CRAN comments
 
+## Submission: IRTC 1.0.0 (new submission)
+
+This is a new package. Version 1.0.0 contains the verified 0.1.0 estimation
+core plus a usability layer (data import, data checks, quality ratings,
+Excel export, Word/HTML reports, machine-readable results).
+
 ## R CMD check results
 
 0 errors | 0 warnings | 1 note
@@ -11,13 +17,27 @@
 * Local: macOS Tahoe 26.5.1, R 4.6.0 (aarch64-apple-darwin23)
 * GitHub Actions: R release on macOS, Windows, and Linux
 
+## Optional dependencies
+
+readxl, writexl, haven, openxlsx, officer and jsonlite are Suggests and are
+used conditionally (guarded by requireNamespace() with an actionable error
+message); all examples and tests that need them are skipped when they are
+not installed. mvtnorm and sfsmisc are likewise used conditionally.
+
+## Non-ASCII content
+
+R sources are ASCII (Chinese UI strings are \uxxxx escaped). DESCRIPTION
+declares Encoding: UTF-8; one Rd file (irtc_read.Rd) declares
+\encoding{UTF-8} because a documented default argument contains Chinese
+missing-value labels.
+
 ## Ownership and licensing
 
 Copyright in IRTC is held by WEIAN DATA TECH (Beijing) Co., Ltd. The package is
 distributed under GPL (>= 2), with ownership and external runtime dependency
 boundaries recorded in DESCRIPTION and inst/COPYRIGHTS. MASS is imported;
-mvtnorm and sfsmisc are used conditionally from Suggests. Their source code is
-not bundled in IRTC.
+all other third-party packages are used conditionally from Suggests. Their
+source code is not bundled in IRTC.
 
 Maintainer: Kunxiang Ma <makunxiang@weiandata.com>
 Company contact: <contact@weiandata.com>

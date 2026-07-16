@@ -1,0 +1,76 @@
+# IRTC — Item Response Theory Calibration for R (guide for AI agents)
+
+IRTC estimates IRT models (Rasch/1PL, 2PL, PCM, PCM2, RSM, GPCM) by marginal
+maximum likelihood. This file is a compact API reference for automated
+callers. Language of user-facing output: options(irtc.lang="zh") (default)
+or "en". Machine-readable schemas never depend on the language option.
+
+## Recommended workflow
+
+1. data <- irtc_read("file.xlsx")          # or .csv/.tsv/.sav/.dta/.sas7bdat
+                                           # or a data.frame/matrix
+2. chk <- irtc_check_data(data)            # pre-flight; chk$ok is TRUE/FALSE,
+                                           # chk$issues is a data frame with
+                                           # code/severity/scope/where/
+                                           # message_en/message_zh/fix_en/fix_zh
+3. mod <- irtc(data, model="1PL")          # model is REQUIRED: "1PL"|"Rasch"|
+                                           # "2PL"|"PCM"|"PCM2"|"RSM"|"GPCM".
+                                           # Raw A/B/C/D answers: add
+                                           # key=c(Q1="A", Q2="C", ...)
+4. res <- irtc_results(mod)                # stable tidy schema (see below)
+   irtc_json(mod, "results.json")          # same content as JSON
+5. irtc_excel(mod, dir="out")              # 3 xlsx files: item quality /
+                                           # item parameters (linking) /
+                                           # person ability
+6. irtc_report(mod, "report.html",         # or .docx (needs 'officer')
+       audience="decision")                # audience: survey|decision|stat
+
+Low-level (expert) API, unchanged since 0.1.0: irtc.mml(), irtc.mml.2pl(),
+summary(), anova(), logLik(). irtc() returns the same 'irtc' object enriched
+with $usability (ctt, itemfit, quality, data_log, check).
+
+## irtc_results(mod) schema v1.0 (list of data frames)
+
+- model_info (1 row): schema_version, package_version, model, n_persons,
+  n_items, n_dimensions, deviance, n_parameters, aic, bic, eap_reliability,
+  iterations
+- items (1 row per item): item_id, model, n_obs, p_value, slope_a,
+  difficulty_b, se_b, tau_k..., discr_ctt, outfit, infit,
+  rating (good|acceptable|review|revise), reasons_en, reasons_zh,
+  advice_en, advice_zh
+- persons (1 row per person, same order as input rows): person_id,
+  n_answered, raw_score, eap[_dimD], se[_dimD], percentile[_dimD],
+  t_score[_dimD]
+- cleaning_log: step, code, message_en, message_zh
+- check_issues: code, severity (error|warning|info), scope, where,
+  message_en, message_zh, fix_en, fix_zh
+
+## Structured conditions
+
+All errors/warnings from the usability layer are classed conditions:
+classes irtc_error/irtc_warning plus a domain class
+(e.g. irtc_error_data_format, irtc_error_scoring, irtc_error_estimation,
+irtc_error_missing_package). Fields: $code, $reason, $fix, $reason_en,
+$fix_en, $data. Catch with tryCatch(expr, irtc_error=function(e) ...).
+
+Error code ranges: E0xx dependency, E1xx reading, E2xx scoring,
+E3xx validation, E4xx estimation/input, E5xx export/report.
+Typical automated repairs:
+- E001 missing package -> install.packages(e$data$package)
+- E105 unsupported extension -> convert to csv/xlsx
+- E305 non-numeric items -> provide key= to irtc() or irtc_score()
+- E407 data check failed -> inspect e$data$check$issues and fix per row
+- E501 file exists -> retry with overwrite=TRUE
+
+## Interpretation defaults (irtc_quality_thresholds())
+
+p_value flagged <0.10 or >0.95; item-rest correlation flagged <0.25 (poor
+<0.15, negative = probable key error); infit/outfit normal 0.7-1.3, severe
+outside 0.5-1.5. Ratings: good | acceptable | review | revise.
+
+## Excel linking table (irtc_excel file 2, schema v1.0)
+
+Fixed columns: schema_version, analysis_id, model, item_id, n_obs, p_value,
+slope_a, difficulty_b, se_b, tau_1...tau_k. Anchor items must keep identical
+item_id across administrations; difficulty_b is on the logit scale with the
+"cases" constraint (person mean = 0) unless changed via constraint=.

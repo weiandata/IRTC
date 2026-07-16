@@ -1503,3 +1503,84 @@ mean(v); sd(v)         # 平均、标准差
 ---
 
 *本手册对应 IRTC 0.1.0。函数签名以包内 `?irtc.mml`、`?irtc.mml.2pl` 帮助页为准。如发现手册与软件行为不一致，以软件帮助页为准。*
+
+# 第 12 章　易用层：一行命令完成分析（1.0.0 新增）
+
+本章的功能是为三类新用户准备的：不写代码、不懂统计的调查工作人员；
+自动化流水线和 AI 助手；以及接收结果的决策者。前面章节的专业函数
+完全不变，本章所有功能都是可选的。
+
+输出语言：`options(irtc.lang = "zh")`（默认中文）或 `"en"`（英文）。
+
+## 12.1 一行命令：从文件到模型
+
+```r
+mod <- irtc("作答数据.xlsx", model = "1PL")
+```
+
+`irtc()` 会自动完成：读取文件（支持 Excel、CSV/TSV（自动识别分隔符和
+UTF-8/GBK 编码）、SPSS/Stata/SAS、R 数据框）→ 识别并分离学号/编号列 →
+清洗数据（缺失码转 NA、文本转数字、类别重编码，每一步都记入日志）→
+预检数据 → 估计模型 → 附上题目质量评级。
+
+要点：
+- `model` 必须指定：对错题用 `"1PL"` 或 `"2PL"`；多级计分/量表题用
+  `"PCM"` 或 `"GPCM"`。
+- 原始 A/B/C/D 作答加上 `key = c(Q1 = "A", Q2 = "C", ...)` 自动计分。
+- 专业参数（如 `group`、`control`）原样传给底层函数。
+
+## 12.2 先体检，再估计
+
+```r
+chk <- irtc_check_data(irtc_read("作答数据.csv"))
+chk$ok        # 数据能不能用：TRUE / FALSE
+chk$issues    # 每个问题的代码、严重程度、位置和处理建议（中英双语）
+```
+
+## 12.3 看得懂的结果
+
+```r
+plain_summary(mod)            # 分层文字摘要：先结论、后细节
+mod$usability$quality         # 每题评级：好 / 可用 / 需检查 / 建议修改
+plot(mod, type = "wright")    # 还有 "ability"、"quality"、"icc"
+```
+
+## 12.4 三个 Excel 结果表
+
+```r
+irtc_excel(mod, dir = "结果")
+```
+
+一次生成三个独立的 .xlsx 文件（需要安装 openxlsx 包）：
+
+1. **题目质量表**：红黄绿配色的质量评级，附白话原因和处理建议，
+   不懂统计也能直接判断题目好坏；
+2. **题目难度区分度表**：列结构固定（表内注明 schema 版本），跨年度
+   锚题只要 `item_id` 一致即可直接合并做链接等值；
+3. **样本能力值表**：行顺序与输入数据一致的平表（ID、作答题数、
+   原始分、能力值 EAP、标准误、百分位、T 分数），可整体粘贴进
+   总样本表。
+
+每个文件都带一个"说明"工作表，逐列解释怎么读。
+
+## 12.5 给不同人看的报告
+
+```r
+irtc_report(mod, "报告.docx", audience = "decision")  # 给决策者：1-2 页结论
+irtc_report(mod, "报告.html", audience = "survey")    # 给调查人员：白话全文
+irtc_report(mod, "报告.html", audience = "stat")      # 给统计人员：完整技术版
+```
+
+HTML 报告是单个自包含文件，浏览器直接打开；Word 报告需要安装
+officer 包。
+
+## 12.6 给流水线和 AI 助手
+
+```r
+res <- irtc_results(mod)          # 结构稳定的数据框列表（schema v1.0）
+irtc_json(mod, "results.json")    # 同样内容导出 JSON（需要 jsonlite）
+```
+
+易用层的所有报错都带机器可读字段：`$code`（错误码）、`$reason`（原因）、
+`$fix`（修复建议）、`$data`（附加数据）。完整错误码表和结果 schema
+见包内文件 `inst/llms.txt`。

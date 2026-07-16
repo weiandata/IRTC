@@ -348,3 +348,78 @@ The tables below cover every error/warning IRTC raises plus common IRT estimatio
 
 
 *This manual corresponds to IRTC 0.1.0. Function signatures are authoritative in the package help pages `?irtc.mml` and `?irtc.mml.2pl`.*
+
+# 6. The Usability Layer (new in 1.0.0)
+
+The functions in this chapter wrap the expert API from Chapter 2 for three
+new audiences: survey staff without statistical training, automated
+pipelines / AI agents, and decision makers who receive the results. The
+expert API is unchanged; everything here is optional.
+
+Output language: `options(irtc.lang = "zh")` (default) or `"en"`.
+
+## 6.1 One line from file to fitted model
+
+```r
+mod <- irtc("responses.xlsx", model = "1PL")
+```
+
+`irtc()` reads the file (Excel, CSV/TSV with automatic delimiter and
+UTF-8/GBK detection, SPSS/Stata/SAS via haven, or a data frame), detects
+and sets aside the person-ID column, cleans the data (missing codes,
+text-to-number, category recoding — every action logged), checks it,
+estimates the requested model and attaches classical statistics, item fit
+and quality ratings. `model` is required; raw A/B/C/D answers are scored
+with `key = c(Q1 = "A", ...)`. Extra arguments (e.g. `group`, `control`)
+pass straight to `irtc.mml()` / `irtc.mml.2pl()`.
+
+## 6.2 Check first, then estimate
+
+```r
+chk <- irtc_check_data(irtc_read("responses.csv"))
+chk$ok        # TRUE / FALSE
+chk$issues    # code, severity, where, bilingual message and fix
+```
+
+## 6.3 Plain-language results
+
+```r
+plain_summary(mod)            # layered summary, conclusion first
+mod$usability$quality         # good / acceptable / review / revise per item
+plot(mod, type = "wright")    # also: "ability", "quality", "icc"
+```
+
+## 6.4 The three Excel workbooks
+
+```r
+irtc_excel(mod, dir = "results")
+```
+
+Writes three separate .xlsx files (needs the openxlsx package): an item
+quality table anyone can read (colour-coded ratings with reasons and
+advice), an item parameter table with a frozen column schema for
+cross-year anchor-item linking (merge on `item_id`), and a flat person
+ability table whose rows stay in input order for pasting into a master
+sample sheet. Each workbook has a "Notes" sheet explaining every column.
+
+## 6.5 Reports for each audience
+
+```r
+irtc_report(mod, "report.docx", audience = "decision")  # 1-2 page summary
+irtc_report(mod, "report.html", audience = "survey")    # plain language
+irtc_report(mod, "report.html", audience = "stat")      # full technical
+```
+
+HTML reports are single self-contained files; Word needs the officer
+package.
+
+## 6.6 For pipelines and AI agents
+
+```r
+res <- irtc_results(mod)   # tidy data frames, stable schema v1.0
+irtc_json(mod, "results.json")
+```
+
+All errors and warnings of the usability layer are structured conditions
+with `$code`, `$reason`, `$fix` and `$data`; see `inst/llms.txt` for the
+complete code list and schema reference.

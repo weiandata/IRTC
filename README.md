@@ -33,6 +33,25 @@ many persons, items and dimensions.
   exact computation remains the default.
 - Chinese and English user manuals for non-specialist users.
 
+### Usability layer (1.0.0)
+
+- One-stop `irtc()` estimation: reads Excel/CSV/TSV/SPSS/Stata/SAS files or
+  R objects, cleans the data (with a traceable bilingual log), scores raw
+  A/B/C/D responses against an answer key, checks the data and estimates
+  the requested model. All expert arguments pass through unchanged.
+- `irtc_check_data()` pre-flight diagnostics with concrete fixes.
+- Plain-language item quality ratings (`irtc_quality()`), classical
+  statistics (`irtc_ctt()`) and item fit (`irtc_itemfit()`).
+- `irtc_excel()` writes three Excel workbooks: an item quality table for
+  non-specialists, an item parameter table with a frozen schema for
+  cross-year anchor linking, and a flat person ability table.
+- `irtc_report()` audience-specific Word/HTML reports (decision makers,
+  survey staff, statisticians) with Wright map, ability and ICC figures.
+- Machine-readable results for AI agents: `irtc_results()`/`irtc_json()`
+  with a stable schema, structured error conditions (code/reason/fix) and
+  a compact API reference in `inst/llms.txt`.
+- Bilingual output: `options(irtc.lang = "zh")` (default) or `"en"`.
+
 ## Repository Structure
 
 ```text
@@ -69,13 +88,33 @@ R CMD build .
 R CMD INSTALL IRTC_0.1.0.tar.gz
 ```
 
-Quick start:
+Quick start (survey staff — one line from file to results):
 
 ```r
 library(IRTC)
+mod <- irtc("responses.xlsx", model = "1PL")   # or "2PL", "PCM", "GPCM", ...
+plain_summary(mod)                             # layered plain-language summary
+irtc_excel(mod, dir = "results")               # 3 Excel result tables
+irtc_report(mod, "report.docx", audience = "decision")
+```
+
+Quick start (statisticians — full control, unchanged expert API):
+
+```r
 data(data.sim.rasch)
 mod <- irtc.mml(resp = data.sim.rasch)
 summary(mod)
+irtc_itemfit(mod)
+```
+
+Quick start (AI agents / pipelines — machine-readable in and out):
+
+```r
+chk <- irtc_check_data(irtc_read("responses.csv", verbose = FALSE))
+if (chk$ok) {
+    mod <- irtc("responses.csv", model = "2PL", verbose = FALSE)
+    irtc_json(mod, "results.json")   # stable schema, see inst/llms.txt
+}
 ```
 
 See [examples/basic-usage.R](examples/basic-usage.R) for more.
