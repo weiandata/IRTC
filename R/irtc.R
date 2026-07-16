@@ -253,6 +253,8 @@ irtc <- function(data, model, key=NULL, rules=NULL, q=NULL,
     usability <- list(model=model, data_log=data_obj$log,
         check=check_obj, removed_items=bad_items, q=qobj,
         q_only_items=q_only_items,
+        score_info=data_obj$score_info,
+        weights=data_obj$weights,
         rare_categories=rare$info,
         rare_mode=rare_categories)
     if (quality) {

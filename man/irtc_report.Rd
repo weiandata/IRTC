@@ -9,7 +9,13 @@ item quality summary, item characteristic curves) and tables. Three
 audience layouts are available: \code{"decision"} (a short executive
 summary with recommendations), \code{"survey"} (a plain-language full
 report) and \code{"stat"} (a complete technical report including item
-parameters, item fit and model information).
+parameters, item fit and model information). Every layout includes a
+\emph{Model diagnostics} section (convergence, information criteria with
+interpretation, EAP reliability band, item-fit reading) and a \emph{Data
+processing transparency} section (weights summary, Q-matrix item
+alignment, unobserved-category collapses, dropped items, scoring
+summary, and - for \code{"stat"}/\code{"survey"} - the full cleaning
+log), detailed for statisticians and condensed for other audiences.
 
 HTML reports are fully self-contained single files (images embedded);
 Word reports require the optional \pkg{officer} package.
