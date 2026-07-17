@@ -6,7 +6,7 @@ Packaging-only release. It exists because CRAN's incoming pre-tests
 rejected 1.1.0 with 2 ERRORs and 1 WARNING. No package code changed: the
 failures came from documentation sources and two over-specified test
 assertions. Full account, including root causes and the reasoning behind
-each fix: `docs/cran-submission-1.1.1-zh.md`.
+each fix: `docs/internal/cran-submission-1.1.1-zh.md`.
 
 What changed relative to 1.1.0:
 
@@ -50,7 +50,7 @@ recording:
   `R.version.string` wording differs.
 
 Consequence: local green did not imply CRAN green. See the 1.1.1 entry
-above and `docs/cran-submission-1.1.1-zh.md`.
+above and `docs/internal/cran-submission-1.1.1-zh.md`.
 
 1.1.0 is a usability release for the GPCM / multidimensional workflow on
 top of the verified 1.0.0 core. New behaviour (all in the usability
@@ -63,7 +63,7 @@ difficulty labels and Q-dimension person headers (`irtc_results` schema
 1.1, additive); and Model-diagnostics + Data-transparency report
 sections.
 
-Plan: `docs/v1.1-plan-zh.md`. Acceptance follows the 1.0 policy and is
+Plan: `docs/internal/v1.1-plan-zh.md`. Acceptance follows the 1.0 policy and is
 wired into `scripts/verify-release-1.1.R`. Verification results
 (`scripts/verify-release-1.1.R` on macOS, R 4.6.0 aarch64):
 

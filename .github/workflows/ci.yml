@@ -32,7 +32,7 @@ jobs:
             --accept-timeouts
             --exclude-path docs/development
             --exclude-path docs/manuals
-            --exclude-path docs/cran-submission-guide-zh.md
+            --exclude-path docs/internal/cran-submission-guide-zh.md
             --exclude-path scripts/sp5_threading_notes.md
             './**/*.md'
           fail: true

@@ -7,13 +7,13 @@ Last updated: 2026-07-17. Current work: **V1.1** on branch `v1.1-dev`.
 ## Project state
 
 - 1.0.0: verified, CRAN-ready (`IRTC_1.0.0.tar.gz`). Plan:
-  `docs/v1.0-release-plan-zh.md`; verification: `docs/release-status.md`;
+  `docs/internal/v1.0-release-plan-zh.md`; verification: `docs/internal/release-status.md`;
   pipeline: `scripts/verify-release-1.0.R`.
 - 1.1.0: **all modules M1-M6 implemented and verified** (merged to `main`;
   `IRTC_1.1.0.tar.gz`). `scripts/verify-release-1.1.R` passes end to end:
   1191 tests green, 96.0% overall coverage (touched key files >= 95%),
   `R CMD check --as-cran` 0 ERROR / 0 WARNING / 1 NOTE, GPCM smoke passed.
-  Plan: `docs/v1.1-plan-zh.md`; status: `docs/release-status.md`.
+  Plan: `docs/internal/v1.1-plan-zh.md`; status: `docs/internal/release-status.md`.
 
 Implemented in 1.1.0 (new files `R/irtc_qmatrix.R`,
 `R/irtc_rare_categories.R`; new tests `test-read-weights.R`,
@@ -55,7 +55,7 @@ Modules, in implementation order (M2 is the foundation for M3-M6):
    plots, no methodology chapter (explicitly out of scope).
 
 New condition codes reserved: see table at the end of
-`docs/v1.1-plan-zh.md` (I115-W425).
+`docs/internal/v1.1-plan-zh.md` (I115-W425).
 
 ## Acceptance gates (same bar as 1.0)
 

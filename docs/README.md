@@ -1,26 +1,21 @@
 # Documentation
 
-Use this directory for durable project documentation that does not belong in
-the root README. Documentation should explain purpose and constraints before
-implementation details and should be updated in the same change as the behavior
-it describes.
+## User manuals
 
-## Contents
+Start here. The manuals are written for people using IRTC, not for people
+developing it.
 
-- [Repository standard](repository-standard.md) summarizes the governance
-  baseline inherited from the WeianData repository template.
-- [CRAN submission guide (中文)](cran-submission-guide-zh.md) documents the
-  end-to-end CRAN submission process for this package (how it should be done).
-- [CRAN submission record: 1.1.0 rejection and 1.1.1 resubmission (中文)](cran-submission-1.1.1-zh.md)
-  records what actually happened: what CRAN's incoming pre-tests reported, the
-  root cause of each ERROR, and why each fix was chosen.
-- [Release status](release-status.md) records the verified package state.
-- [Technical compliance review](compliance/2026-07-14-technical-compliance-review.md)
-  records the repository-level licensing and ownership audit.
-
-### User manuals (`manuals/`)
-
-- [IRTC Manual (English, V1.1.0)](manuals/IRTC-Manual-English.md)
-- [IRTC 使用手册（中文，V1.1.0）](manuals/IRTC手册-中文-V1.1.0.md)
+- [IRTC Manual (English)](manuals/IRTC-Manual-English.md)
+- [IRTC 使用手册（中文）](manuals/IRTC手册-中文-V1.1.0.md)
   (PDF can be regenerated with `scripts/build-manual-pdf.sh`)
-- [V1.0 release plan (中文)](v1.0-release-plan-zh.md)
+
+Inside R, every function has standard help: `?irtc`, `?irtc.mml`,
+`help(package = "IRTC")`.
+
+For AI agents and automated pipelines, `inst/llms.txt` is a compact API
+reference and `irtc_results()` / `irtc_json()` return a stable schema.
+
+## Internal documentation
+
+Development and release process records, kept for maintainer reference — not
+needed to use the package: [docs/internal/](internal/README.md).

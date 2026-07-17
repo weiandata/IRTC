@@ -10,5 +10,5 @@ ignores:
   # not linted.
   - docs/development/**
   - docs/manuals/**
-  - docs/cran-submission-guide-zh.md
+  - docs/internal/cran-submission-guide-zh.md
   - scripts/sp5_threading_notes.md

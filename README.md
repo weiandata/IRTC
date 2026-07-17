@@ -1,113 +1,104 @@
 # IRTC
 
-High-performance item response theory (IRT) estimation for R, built for
-surveys, assessments and scale analysis.
+**English** | [简体中文](README.zh-CN.md)
 
-Status: Active
+[![R CMD check](https://github.com/weiandata/IRTC/actions/workflows/r-check.yml/badge.svg)](https://github.com/weiandata/IRTC/actions/workflows/r-check.yml)
+[![License: GPL v2+](https://img.shields.io/badge/License-GPL%20%3E%3D%202-blue.svg)](https://www.gnu.org/licenses/gpl-2.0)
 
-Owner: WEIAN DATA Engineering
+Item response theory (IRT) analysis in R that goes from a spreadsheet to a
+readable report — without requiring you to be a statistical programmer.
 
-## Project Overview
+Most IRT packages start after your data is already a clean numeric matrix and
+stop at a model object you have to dig results out of. IRTC does those two ends
+for you as well, while leaving the full expert API available underneath.
 
-IRTC is an R package for marginal maximum likelihood (MML) estimation of item
-response models. It supports dichotomous and ordered polytomous items,
-unidimensional and between-item multidimensional models, latent regression,
-multiple groups, case weights and person ability estimation (EAP).
+> **Status:** submitted to CRAN, awaiting review. Until it is accepted, install
+> from GitHub (see [Install](#install)). The API is stable; 1.1.x is backward
+> compatible with 1.0.
 
-On top of standard MML estimation, IRTC adds parallel computation, automatic
-engine selection, low-memory streaming estimation and an opt-in
-controlled-accuracy quadrature mode that reports a measured approximation
-error. It suits both routine questionnaire analysis and large-scale data with
-many persons, items and dimensions.
+## What it looks like
 
-## Features
+One line from data to fitted model, and a summary in plain language rather than
+a wall of coefficients. This runs as-is on the bundled example data:
 
-- Rasch / 1PL, PCM, RSM, 2PL and GPCM models.
-- Unidimensional and between-item multidimensional models.
-- Latent regression, multiple groups and case weights.
-- Item parameters, EAP ability estimates and standard errors.
-- AIC, BIC, log-likelihood and nested model comparison (`anova`).
-- Three computation engines: `grid`, `streaming` and `auto`; streaming avoids
-  the full person-by-node posterior matrix and bounds memory use.
-- Optional controlled-accuracy acceleration with a measured error report;
-  exact computation remains the default.
-- Chinese and English user manuals for non-specialist users.
-
-### Usability layer
-
-- One-stop `irtc()` estimation: reads Excel/CSV/TSV/SPSS/Stata/SAS files or
-  R objects, cleans the data (with a traceable bilingual log), scores raw
-  A/B/C/D responses against an answer key, checks the data and estimates
-  the requested model. All expert arguments pass through unchanged.
-- Sampling-weight import (`weights =`, or auto-detected) and Q-matrix
-  import/alignment (`irtc_read_q()`, `irtc_align_q()`, `irtc(q = )`) whose
-  dimension names flow into the person output.
-- File-based answer keys and rules; an answer-key `partial_answer` column
-  gives partial-credit scoring (full = 2 / partial = 1 / other = 0).
-- `rare_categories` handling of score categories nobody reached (collapse
-  by default, or a threshold-stabilising prior).
-- `irtc_check_data()` pre-flight diagnostics with concrete fixes.
-- Plain-language item quality ratings (`irtc_quality()`), classical
-  statistics (`irtc_ctt()`) and item fit (`irtc_itemfit()`).
-- `irtc_excel()` writes three Excel workbooks: an item quality table for
-  non-specialists, an item parameter table with a frozen schema for
-  cross-year anchor linking (with semantic `b_partial`/`b_full` step
-  labels), and a flat person ability table.
-- `irtc_report()` audience-specific Word/HTML reports (decision makers,
-  survey staff, statisticians) with Wright map, ability and ICC figures,
-  plus model-diagnostics and data-processing-transparency sections.
-- Machine-readable results for AI agents: `irtc_results()`/`irtc_json()`
-  with a stable schema, structured error conditions (code/reason/fix) and
-  a compact API reference in `inst/llms.txt`.
-- Bilingual output: `options(irtc.lang = "zh")` (default) or `"en"`.
-
-## Repository Structure
-
-```text
-.
-├── .github/            # Issue/PR templates and CI workflows
-├── R/                  # Package R source
-├── src/                # Rcpp/C++ estimation core
-├── man/                # Package documentation (Rd)
-├── data/               # Bundled example datasets
-├── tests/              # testthat suite and regression fixtures
-├── docs/               # User manuals and CRAN submission guide
-├── examples/           # Minimal usage examples
-├── scripts/            # Development utility scripts
-├── DESCRIPTION         # Package metadata
-└── NAMESPACE           # Package namespace
+```r
+library(IRTC)
+data(data.sim.rasch)
+mod <- irtc(data.sim.rasch, model = "1PL")   # a file path works the same way
+plain_summary(mod)
 ```
 
-## Getting Started
+```text
+------------------------------------------------------------
+Conclusion
+------------------------------------------------------------
+The test measured 2000 persons with 40 items. Score reliability is 0.87 (good).
+40 of 40 items are of good or acceptable quality.
 
-Requirements: R (>= 3.5.0) with a C++ toolchain (Rtools on Windows), and the
-Rcpp and RcppArmadillo packages.
+------------------------------------------------------------
+Item quality
+------------------------------------------------------------
+Item quality: 40 good, 0 acceptable, 0 to review, 0 to revise.
+Internal consistency (Cronbach's alpha): 0.8658.
 
-Install from this repository:
+------------------------------------------------------------
+Ability distribution
+------------------------------------------------------------
+mean ability 0, spread (SD) 0.93, range -2.92 to 3.14.
+Ability scores are on the logit scale; 0 is the population-model average,
+higher means stronger.
+
+------------------------------------------------------------
+Next steps
+------------------------------------------------------------
+Export the three Excel tables: irtc_excel(mod).
+Create a report: irtc_report(mod, "report.docx").
+Full technical output: summary(mod).
+```
+
+The block above is abridged; an "Analysis overview" section is also printed.
+
+`irtc()` reads Excel/CSV/TSV/SPSS/Stata/SAS or R objects, cleans the data with
+a traceable log, scores raw A/B/C/D responses against an answer key, checks the
+data, and estimates the model. Every expert argument passes straight through.
+
+## Install
 
 ```r
 # install.packages("remotes")
 remotes::install_github("weiandata/IRTC")
 ```
 
-Or from a local clone:
+Requires R (>= 3.5.0) and a C++ toolchain (Rtools on Windows). Excel, SPSS and
+report output need optional packages (`readxl`, `writexl`, `haven`, `officer`);
+IRTC tells you which one to install if you use a feature that needs it.
 
-```sh
-R CMD build .
-R CMD INSTALL IRTC_1.1.0.tar.gz
-```
+## Models and features
 
-Quick start (survey staff — one line from file to results):
+- **Models:** Rasch / 1PL, PCM, RSM, 2PL, GPCM — dichotomous and ordered
+  polytomous items.
+- **Designs:** unidimensional and between-item multidimensional, latent
+  regression, multiple groups, sampling weights.
+- **Output:** item parameters, EAP abilities and standard errors, AIC/BIC,
+  nested model comparison (`anova`), item fit and classical statistics.
+- **Scale:** three engines (`grid`, `streaming`, `auto`) with automatic
+  routing; streaming bounds memory for large person × item × dimension data.
+  An opt-in controlled-accuracy mode reports a *measured* approximation error,
+  and exact computation stays the default.
+- **Bilingual:** `options(irtc.lang = "zh")` (default) or `"en"`.
+
+## Three ways to use it
+
+**Survey and assessment staff** — file in, results out:
 
 ```r
-library(IRTC)
-mod <- irtc("responses.xlsx", model = "1PL")   # or "2PL", "PCM", "GPCM", ...
-plain_summary(mod)                             # layered plain-language summary
-irtc_excel(mod, dir = "results")               # 3 Excel result tables
+mod <- irtc("responses.xlsx", model = "1PL")
+plain_summary(mod)                            # plain-language summary
+irtc_excel(mod, dir = "results")              # item quality / parameters / abilities
 irtc_report(mod, "report.docx", audience = "decision")
 ```
 
-Quick start (statisticians — full control, unchanged expert API):
+**Statisticians** — the full expert API, nothing hidden:
 
 ```r
 data(data.sim.rasch)
@@ -116,57 +107,39 @@ summary(mod)
 irtc_itemfit(mod)
 ```
 
-Quick start (AI agents / pipelines — machine-readable in and out):
+**AI agents and pipelines** — machine-readable in and out:
 
 ```r
 chk <- irtc_check_data(irtc_read("responses.csv", verbose = FALSE))
 if (chk$ok) {
     mod <- irtc("responses.csv", model = "2PL", verbose = FALSE)
-    irtc_json(mod, "results.json")   # stable schema, see inst/llms.txt
+    irtc_json(mod, "results.json")   # stable schema; see inst/llms.txt
 }
 ```
 
-See [examples/basic-usage.R](examples/basic-usage.R) for more.
+Errors are structured conditions carrying a code, a reason and a fix.
 
-## Development
-
-Changes use short-lived branches named `<category>/<kebab-case-topic>` and go
-through pull requests; keep `main` releasable. See
-[CONTRIBUTING.md](CONTRIBUTING.md) for commit, review, testing and evidence
-requirements.
-
-Run the test suite from the repository root:
-
-```r
-devtools::test()
-```
-
-CI runs Markdown/link checks and `R CMD check` on every push and pull request.
+See [examples/basic-usage.R](examples/basic-usage.R) for a runnable tour.
 
 ## Documentation
 
+- [English manual](docs/manuals/IRTC-Manual-English.md) —
+  [中文使用手册](docs/manuals/IRTC手册-中文-V1.1.0.md)
+- In R: `?irtc`, `?irtc.mml`, `help(package = "IRTC")`
 - [Documentation index](docs/README.md)
-- [English manual](docs/manuals/IRTC-Manual-English.md)
-- [中文使用手册 (V1.1.0)](docs/manuals/IRTC手册-中文-V1.1.0.md)
-- [CRAN submission guide (中文)](docs/cran-submission-guide-zh.md)
-- [WeianData Engineering Handbook](https://github.com/weiandata/.github/blob/main/handbook/README.md)
 
-## Data and Security
+## Contributing
 
-Bundled datasets are simulated by IRTC (reproducible via
-[`scripts/gen_data.R`](scripts/gen_data.R)). Do not commit credentials,
-secrets, personal information, restricted
-client data, or unapproved datasets. Follow [SECURITY.md](SECURITY.md) for
-private vulnerability reporting.
+Issues and pull requests are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md)
+for branch, commit, testing and review requirements. Report security concerns
+privately through [SECURITY.md](SECURITY.md), not in public issues.
 
-## Support
-
-Use the repository's issue templates for non-sensitive defects, features, and
-documentation work. Report security concerns only through the private channels
-listed in [SECURITY.md](SECURITY.md).
+Bundled datasets are simulated by IRTC and reproducible via
+[`scripts/gen_data.R`](scripts/gen_data.R); they contain no real respondent
+data.
 
 ## License
 
-IRTC is distributed under GPL (>= 2). See [LICENSE](LICENSE) and
-[`inst/COPYRIGHTS`](inst/COPYRIGHTS). Copyright in IRTC is held by WEIAN DATA
-TECH (Beijing) Co., Ltd. Company contact: <contact@weiandata.com>.
+GPL (>= 2). See [LICENSE](LICENSE) and [`inst/COPYRIGHTS`](inst/COPYRIGHTS).
+
+Copyright © 2026 WEIAN DATA TECH (Beijing) Co., Ltd. — <contact@weiandata.com>
