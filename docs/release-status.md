@@ -1,6 +1,6 @@
 # IRTC Release Status
 
-## 1.1.0 (in development, branch v1.1-dev)
+## 1.1.0 (verified 2026-07-17, ready for CRAN submission)
 
 1.1.0 is a usability release for the GPCM / multidimensional workflow on
 top of the verified 1.0.0 core. New behaviour (all in the usability
@@ -14,15 +14,18 @@ difficulty labels and Q-dimension person headers (`irtc_results` schema
 sections.
 
 Plan: `docs/v1.1-plan-zh.md`. Acceptance follows the 1.0 policy and is
-wired into `scripts/verify-release-1.1.R` (tests green with expected
-warnings asserted; coverage overall >= 90% and touched key files
->= 95% incl. `irtc_qmatrix.R`, `irtc_rare_categories.R`, `irtc_report.R`;
-`R CMD check --as-cran --no-manual` 0 ERROR / 0 WARNING; extended
-end-to-end GPCM smoke covering weights + Q matrix + partial-credit key
-under both rare-category modes plus an extreme-data case). Run
-`Rscript scripts/verify-release-1.1.R` from the repository root on the
-maintainer machine; **not yet executed** (no R toolchain in the
-authoring environment).
+wired into `scripts/verify-release-1.1.R`. Verification results
+(`scripts/verify-release-1.1.R` on macOS, R 4.6.0 aarch64):
+
+- testthat suite: 1191 passes, 0 failures, 0 errors (expected warnings
+  asserted via `expect_warning()`).
+- Test coverage (covr): overall 96.0% (target >= 90%); every touched key
+  file >= 95% incl. `irtc_qmatrix.R` (99.7%), `irtc_rare_categories.R`
+  (100%), `irtc_report.R` (99.6%), `irtc_score.R` (99.6%).
+- `R CMD check --as-cran`: 0 ERROR, 0 WARNING, 1 NOTE ("New submission").
+- End-to-end GPCM smoke (weights + Q matrix + partial-credit key under
+  both rare-category modes, plus an extreme-data case): passed.
+- Submission tarball: IRTC_1.1.0.tar.gz.
 
 ## 1.0.0 (verified 2026-07-17, ready for CRAN submission)
 

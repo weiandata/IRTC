@@ -1,4 +1,4 @@
-# IRTC User Manual (English) — V1.0.0
+# IRTC User Manual (English) — V1.1.0
 
 **An R package for item response theory estimation — from complete newcomer to production pipeline**
 
@@ -8,19 +8,22 @@ IRTC is a **self-contained marginal maximum likelihood (MML) estimation** packag
 
 Mainstream IRT packages (TAM, mirt, ltm, ...) assume you are a statistical
 programmer: you prepare a clean numeric matrix by hand and dig the results
-out of a model object yourself. IRTC 1.0 covers both ends of the pipeline
+out of a model object yourself. IRTC covers both ends of the pipeline
 as well:
 
 - **Data gets in (input advantage).** Reads Excel (.xlsx/.xls), CSV/TSV
   (delimiter and UTF-8/GBK encoding auto-detected), SPSS (.sav), Stata
   (.dta), SAS (.sas7bdat) and R data frames directly; detects and sets
-  aside person-ID columns, recodes missing codes, and scores raw A/B/C/D
-  answers against a key. Every cleaning action is logged and traceable.
+  aside person-ID and sampling-weight columns, recodes missing codes, and
+  scores raw A/B/C/D answers against a key (with an optional
+  partial-credit column). A Q matrix and an answer key can both be read
+  from files. Every cleaning action is logged and traceable.
 - **Results get out (output advantage).** One call writes three
   deliverable-ready Excel workbooks (a colour-coded item quality table, a
   frozen-schema item parameter table for cross-year linking, and a
   paste-ready person ability table) plus Word/HTML reports in three
-  audience layouts (decision makers / survey staff / statisticians), all
+  audience layouts (decision makers / survey staff / statisticians) — with
+  model-diagnostics and data-processing-transparency sections — all
   bilingual (English/Chinese).
 - **It is fast (speed advantage).** The estimation core is parallelised
   Rcpp/C++ with SQUAREM/over-relaxation acceleration, and an opt-in
@@ -39,7 +42,7 @@ as well:
   (`irtc_results()`/`irtc_json()`), structured error conditions with
   code/reason/fix fields, and a bundled `llms.txt` API digest — one of the
   first IRT packages designed for automated callers.
-- **Verifiable quality.** 975 automated tests, 95% overall code coverage
+- **Verifiable quality.** 1191 automated tests, 96% overall code coverage
   (>= 95% on every key module), `R CMD check --as-cran` clean on macOS,
   Windows and Linux CI.
 
@@ -75,7 +78,7 @@ Higher ability θ and lower item difficulty b_j mean a higher probability of a c
 install.packages("IRTC")
 
 # or from a source tarball (contains C++, needs a compiler)
-install.packages("path/to/IRTC_1.0.0.tar.gz", repos = NULL, type = "source")
+install.packages("path/to/IRTC_1.1.0.tar.gz", repos = NULL, type = "source")
 library(IRTC)
 
 # optional helpers, installed on demand (Excel/SPSS import, Excel/Word
@@ -95,7 +98,11 @@ frame), detects and sets aside the person-ID column, recodes missing
 codes and Likert categories, checks the data, fits the requested model
 and attaches item quality ratings. `model` is required — right/wrong
 items: `"1PL"` or `"2PL"`; partial-credit or rating items: `"PCM"` or
-`"GPCM"`. Raw A/B/C/D answers? Add `key = c(Q1 = "A", Q2 = "C", ...)`.
+`"GPCM"`. Raw A/B/C/D answers? Add `key = c(Q1 = "A", Q2 = "C", ...)`, or
+point `key =` at an answer-key file (add a `partial_answer` column for
+partial credit). Multidimensional? Pass a Q matrix with `q = "qmatrix.xlsx"`
+(its dimension column names flow into the results). Sampling weights in the
+data file are detected automatically, or name the column with `weights =`.
 
 ## 1.4 Deliverables: Excel tables, reports, plots
 
@@ -149,7 +156,7 @@ mod_fast$accuracy_report    # measured approximation error (met=TRUE = within to
 
 # 2. Full Function Reference
 
-IRTC 1.0.0 exports the **main workflow functions** (2.1 — start here),
+IRTC 1.1.0 exports the **main workflow functions** (2.1 — start here),
 the **expert estimation functions** `irtc.mml()` / `irtc.mml.2pl()`
 (2.2-2.5) and **6 S3 methods** (`summary`, `print`, `logLik`, `anova`,
 `plot`, plus class-specific `print` methods).
@@ -177,33 +184,69 @@ current setting).
 | Output | `plot()` (plot.irtc) | Wright map, ability histogram, quality summary, ICC curves |
 | AI | `irtc_results()` / `irtc_json()` | frozen-schema tidy results (v1.0) and JSON export |
 
-### `irtc(data, model, key = NULL, rules = NULL, id = NULL, sheet = 1, missing_codes = c(-9, -99, 99, 999), check = TRUE, quality = TRUE, verbose = TRUE, ...)`
+### `irtc(data, model, key = NULL, rules = NULL, q = NULL, on_mismatch = c("warn","error"), rare_categories = c("collapse","prior"), id = NULL, weights = NULL, sheet = 1, missing_codes = c(-9, -99, 99, 999), check = TRUE, quality = TRUE, verbose = TRUE, ...)`
 
 `data` is a file path (.xlsx/.xls/.csv/.tsv/.txt/.dat/.sav/.por/.dta/
 .sas7bdat/.xpt), a data frame/matrix, or an `irtc_read()` result. `model`
 is **required**: `"1PL"` (= `"Rasch"`), `"2PL"`, `"PCM"`, `"PCM2"`,
-`"RSM"`, `"GPCM"` (case-insensitive). `...` passes through to
-`irtc.mml()` / `irtc.mml.2pl()` unchanged, so every expert argument still
-works. Returns a standard `irtc` object plus `$usability` (cleaning log,
-check result, CTT, item fit, quality ratings). Unusable items (all-missing
-or zero-variance) are removed with warning `W410`.
+`"RSM"`, `"GPCM"` (case-insensitive). `key`/`rules` accept a vector/data
+frame **or a file path**; an answer-key file with a `partial_answer`
+column gives partial credit (full = 2 / partial = 1 / other = 0). `q` is a
+Q matrix (see `irtc_read_q()`), aligned to the data (`on_mismatch` =
+`"warn"` keeps the shared items, `"error"` stops); its dimension names
+become the person-output column names. `rare_categories` handles score
+categories nobody reached: `"collapse"` (default, merges and annotates)
+or `"prior"` (keeps the structure, stabilises the thresholds). `weights`
+names the sampling-weight column (auto-detected otherwise) and is used as
+`pweights`. `...` passes through to `irtc.mml()` / `irtc.mml.2pl()`
+unchanged, so every expert argument still works (including the uppercase
+`Q =` loading-matrix pass-through). Returns a standard `irtc` object plus
+`$usability` (cleaning log, check result, CTT, item fit, quality ratings,
+Q alignment, weights, rare-category info). Unusable items (all-missing or
+zero-variance) are removed with warning `W410` and kept as an annotated
+row (`status`) in `irtc_results()`.
 
-### `irtc_read(x, sheet = 1, id = NULL, missing_codes = c(-9, -99, 99, 999), na_strings = ..., guess_id = TRUE, clean = TRUE, recode = TRUE, verbose = TRUE)`
+### `irtc_read(x, sheet = 1, id = NULL, weights = NULL, missing_codes = c(-9, -99, 99, 999), na_strings = ..., guess_id = TRUE, guess_weights = TRUE, clean = TRUE, recode = TRUE, verbose = TRUE)`
 
 Delimiter (comma/tab/semicolon/pipe) and encoding (UTF-8, UTF-8-BOM,
 GBK/GB18030) are detected automatically. Negative missing codes are always
 recoded to NA; positive codes only when clearly outside the observed
 response range (protects a legitimate 99 on a 0-100 scale). With
 `recode = TRUE`, integer categories become consecutive 0-based scores
-(1-5 Likert -> 0-4), logged per item. Returns an `irtc_data` object with
-`$resp`, `$pid` and the bilingual `$log`.
+(1-5 Likert -> 0-4), logged per item. `weights` names the sampling-weight
+column; with `guess_weights = TRUE` (default) common weight column names
+(`weight`, `wt`, `pweight`, `权重`, ...; the single letter `w` is excluded
+and must be named explicitly) are detected, validated (positive; missing
+set to 1 with a warning) and set aside as `$weights`. Returns an
+`irtc_data` object with `$resp`, `$pid`, `$weights` and the bilingual
+`$log`.
 
-### `irtc_score(resp, key = NULL, rules = NULL, na_as_wrong = FALSE)`
+### `irtc_score(resp, key = NULL, rules = NULL, na_as_wrong = FALSE, sheet = 1)`
 
-`key` is a named vector such as `c(Q1 = "A", Q2 = "C")` (case,
-whitespace and full-width characters are normalised). `rules` is a data
-frame (item, response, score) for partial credit; responses without a rule
-become NA with warning `W207`.
+`key` is a named vector such as `c(Q1 = "A", Q2 = "C")` **or an answer-key
+file** (an `item`/`题目` column plus an `answer`/`答案` column); case,
+whitespace and full-width characters are normalised. Add a
+`partial_answer`/`部分正确答案` column (several answers separated by
+`|`, `;`, `,` or `、`) for partial credit: full = 2, partial = 1, other =
+0. `rules` is a data frame or file (item, response, score) for arbitrary
+partial credit; responses without a rule become NA with warning `W207`.
+
+### `irtc_read_q(x, sheet = 1)`
+
+Reads a Q (item-by-dimension) matrix from a file, a data frame, or a
+numeric matrix with item row names. An item column (`item`/`题目`, ...) is
+detected; the remaining columns are dimensions and **their names become
+the dimension names**. An optional partial-credit / maximum-score column
+(`partial`/`max_score`, ...) declares which items are polytomous and their
+maximum score. Returns an `irtc_qmatrix` object (`$Q`, `$partial`,
+`$max_score`, `$log`).
+
+### `irtc_align_q(data, q, on_mismatch = c("warn","error"))`
+
+Aligns a Q matrix (an `irtc_qmatrix` or anything `irtc_read_q()` accepts)
+to the response data by item name and in the same order. Items on only one
+side are reported: `"warn"` keeps the shared items (`W420`/`W421`),
+`"error"` stops (`E422`); fewer than two shared items is an error.
 
 ### `irtc_check_data(x, key = NULL, verbose = TRUE)`
 
@@ -232,14 +275,23 @@ Writes three separate .xlsx files (requires openxlsx):
 `*_item_quality.xlsx` (colour-coded ratings + advice + notes sheet),
 `*_item_parameters.xlsx` (frozen schema v1.0 - merge anchor items across
 years on `item_id`), `*_person_ability.xlsx` (rows stay in input order).
-Existing files require `overwrite = TRUE` (error `E501` otherwise).
+For polytomous items the parameter table labels the step difficulties
+semantically: `b_partial` / `b_full` for three-category items,
+`b_step1..b_stepK` for more, plus `categories_unobserved` /
+`categories_collapsed` when some category was never reached. Existing files
+require `overwrite = TRUE` (error `E501` otherwise).
 
 ### `irtc_report(mod, file, format = NULL, audience = c("survey", "decision", "stat"), lang = irtc_lang(), ...)`
 
 `.html` output is a fully self-contained single file (no extra
 dependencies); `.docx` requires officer. The decision layout is a 1-2 page
 executive summary; survey is a plain-language full report; stat adds
-parameter, fit and model-information tables plus ICC curves.
+parameter, fit and model-information tables plus ICC curves. The survey and
+stat layouts also carry a **model-diagnostics** section (convergence,
+AIC/BIC, EAP-reliability bands, item-fit reading) and a
+**data-processing-transparency** section (weights, Q alignment, category
+collapses, dropped items, scoring summary, cleaning log). Missing parent
+directories of the output file are created automatically.
 
 ### `plot(mod, type = c("wright", "ability", "quality", "icc"), lang = irtc_lang(), items = NULL)`
 
@@ -249,9 +301,13 @@ accepts an `items =` selection (unidimensional models).
 ### `irtc_results(mod, resp = NULL)` / `irtc_json(mod, file = NULL, resp = NULL, pretty = TRUE)`
 
 Five frozen-schema data frames: `model_info`, `items` (parameters + CTT +
-fit + ratings), `persons`, `cleaning_log`, `check_issues`. Column names
-are fixed English snake_case regardless of the language option. Full
-schema reference: `inst/llms.txt` inside the installed package.
+fit + ratings + `status` and rare-category annotations), `persons`,
+`cleaning_log`, `check_issues`. Column names are fixed English snake_case
+regardless of the language option; with a Q matrix the per-dimension
+ability/SE columns use the dimension names (`eap_<dim>` / `se_<dim>`). The
+schema version advances to 1.1 (additive only — existing columns are
+unchanged). Full schema reference: `inst/llms.txt` inside the installed
+package.
 
 ### Structured conditions
 
@@ -292,6 +348,11 @@ m <- irtc.mml(resp = dat, irtmodel = "PCM", Q = Q)
 m <- irtc.mml(resp = dat, Y = cbind(1, X))     # latent regression
 m <- irtc.mml(resp = dat, pweights = w)        # case weights
 ```
+
+> The uppercase `Q =` here is the raw loading-matrix pass-through. Through
+> `irtc()` prefer the lowercase `q =` (a file or data frame with an item
+> column and named dimension columns): it aligns the Q matrix to the data
+> and carries the dimension names into the results.
 
 ## 2.3 `irtc.mml.2pl()` — models with discrimination (2PL / GPCM)
 
@@ -443,7 +504,7 @@ against per-metric tolerances `tol_*`, with a `met` verdict (all four 95th-perce
 
 # 4. Complete Troubleshooting Manual
 
-## 4.0 Start here: the V1.0 error-code system
+## 4.0 Start here: the error-code system
 
 Every error and warning raised by the workflow layer carries a code, a
 reason and a **Fix** line — follow the fix first. Code ranges:

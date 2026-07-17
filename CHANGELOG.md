@@ -11,6 +11,40 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 - Add future changes here before release.
 
+## [1.1.0] - 2026-07-17
+
+Usability release for the GPCM / multidimensional workflow. The estimation
+core (`irtc.mml` / `irtc.mml.2pl`) is unchanged; all new behaviour is in the
+usability layer and is backward compatible. No new dependencies.
+
+### Added
+
+- Sampling-weight import in `irtc_read()` / `irtc()`: a `weights =` argument
+  plus auto-detection of common weight column names (English and Chinese),
+  validated and forwarded as `pweights`.
+- Q-matrix (item-by-dimension) import and alignment: `irtc_read_q()`,
+  `irtc_align_q()` and `irtc(q = , on_mismatch = )`. Dimension column names
+  become the dimension names in all person-level output.
+- `key` and `rules` for `irtc_score()` / `irtc()` also accept file paths;
+  answer-key files may carry a `partial_answer` column for partial-credit
+  scoring (full = 2, partial = 1, other = 0), with a consistency check
+  against the Q-matrix partial-credit declaration.
+- `rare_categories` handling of unobserved score categories: `"collapse"`
+  (default) merges and annotates them, `"prior"` keeps the structure by
+  stabilising the affected thresholds. Items nobody answered keep an
+  annotated row in `irtc_results()`.
+- Semantic GPCM difficulty labels in the item parameter table
+  (`b_partial` / `b_full`, or `b_step1..b_stepK`) and Q dimension names in
+  the person output. `irtc_results()` schema advances to 1.1 (additive).
+- `irtc_report()` gains Model-diagnostics and Data-processing-transparency
+  sections, and now creates missing parent directories of the output file.
+
+### Changed
+
+- Automatic sampling-weight detection no longer treats a bare `w` column as
+  weights (it could silently consume a binary item named `w`); pass
+  `weights = "w"` explicitly for that case.
+
 ## [1.0.0] - 2026-07-16
 
 ### Added

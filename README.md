@@ -33,20 +33,29 @@ many persons, items and dimensions.
   exact computation remains the default.
 - Chinese and English user manuals for non-specialist users.
 
-### Usability layer (1.0.0)
+### Usability layer
 
 - One-stop `irtc()` estimation: reads Excel/CSV/TSV/SPSS/Stata/SAS files or
   R objects, cleans the data (with a traceable bilingual log), scores raw
   A/B/C/D responses against an answer key, checks the data and estimates
   the requested model. All expert arguments pass through unchanged.
+- Sampling-weight import (`weights =`, or auto-detected) and Q-matrix
+  import/alignment (`irtc_read_q()`, `irtc_align_q()`, `irtc(q = )`) whose
+  dimension names flow into the person output.
+- File-based answer keys and rules; an answer-key `partial_answer` column
+  gives partial-credit scoring (full = 2 / partial = 1 / other = 0).
+- `rare_categories` handling of score categories nobody reached (collapse
+  by default, or a threshold-stabilising prior).
 - `irtc_check_data()` pre-flight diagnostics with concrete fixes.
 - Plain-language item quality ratings (`irtc_quality()`), classical
   statistics (`irtc_ctt()`) and item fit (`irtc_itemfit()`).
 - `irtc_excel()` writes three Excel workbooks: an item quality table for
   non-specialists, an item parameter table with a frozen schema for
-  cross-year anchor linking, and a flat person ability table.
+  cross-year anchor linking (with semantic `b_partial`/`b_full` step
+  labels), and a flat person ability table.
 - `irtc_report()` audience-specific Word/HTML reports (decision makers,
-  survey staff, statisticians) with Wright map, ability and ICC figures.
+  survey staff, statisticians) with Wright map, ability and ICC figures,
+  plus model-diagnostics and data-processing-transparency sections.
 - Machine-readable results for AI agents: `irtc_results()`/`irtc_json()`
   with a stable schema, structured error conditions (code/reason/fix) and
   a compact API reference in `inst/llms.txt`.
@@ -85,7 +94,7 @@ Or from a local clone:
 
 ```sh
 R CMD build .
-R CMD INSTALL IRTC_1.0.0.tar.gz
+R CMD INSTALL IRTC_1.1.0.tar.gz
 ```
 
 Quick start (survey staff — one line from file to results):

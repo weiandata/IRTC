@@ -1,10 +1,13 @@
 # CRAN comments
 
-## Submission: IRTC 1.0.0 (new submission)
+## Submission: IRTC 1.1.0 (new submission)
 
-This is a new package. Version 1.0.0 contains the verified 0.1.0 estimation
-core plus a usability layer (data import, data checks, quality ratings,
-Excel export, Word/HTML reports, machine-readable results).
+This is a new package (not yet on CRAN). Version 1.1.0 contains the verified
+0.1.0 estimation core plus a usability layer (data import including sampling
+weights and Q-matrix alignment, answer-key/partial-credit scoring, data
+checks, quality ratings, Excel export, Word/HTML reports, machine-readable
+results). The estimation core is unchanged from 0.1.0; all 1.0.x/1.1.0
+additions live in the usability layer and are backward compatible.
 
 ## R CMD check results
 
@@ -27,9 +30,9 @@ not installed. mvtnorm and sfsmisc are likewise used conditionally.
 ## Non-ASCII content
 
 R sources are ASCII (Chinese UI strings are \uxxxx escaped). DESCRIPTION
-declares Encoding: UTF-8; one Rd file (irtc_read.Rd) declares
-\encoding{UTF-8} because a documented default argument contains Chinese
-missing-value labels.
+declares Encoding: UTF-8; a few Rd files (irtc_read.Rd, irtc_read_q.Rd,
+irtc_score.Rd) declare \encoding{UTF-8} because documented default
+arguments and recognised column-name aliases contain Chinese labels.
 
 ## Ownership and licensing
 

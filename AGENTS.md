@@ -9,12 +9,11 @@ Last updated: 2026-07-17. Current work: **V1.1** on branch `v1.1-dev`.
 - 1.0.0: verified, CRAN-ready (`IRTC_1.0.0.tar.gz`). Plan:
   `docs/v1.0-release-plan-zh.md`; verification: `docs/release-status.md`;
   pipeline: `scripts/verify-release-1.0.R`.
-- 1.1.0: **all modules M1-M6 implemented on `v1.1-dev`; full
-  verification not yet run** (no R toolchain in the authoring
-  environment). Plan: `docs/v1.1-plan-zh.md`; status:
-  `docs/release-status.md`. Next step: run
-  `Rscript scripts/verify-release-1.1.R` on the maintainer machine and
-  fix any test/coverage/check shortfalls it reports.
+- 1.1.0: **all modules M1-M6 implemented and verified** (merged to `main`;
+  `IRTC_1.1.0.tar.gz`). `scripts/verify-release-1.1.R` passes end to end:
+  1191 tests green, 96.0% overall coverage (touched key files >= 95%),
+  `R CMD check --as-cran` 0 ERROR / 0 WARNING / 1 NOTE, GPCM smoke passed.
+  Plan: `docs/v1.1-plan-zh.md`; status: `docs/release-status.md`.
 
 Implemented in 1.1.0 (new files `R/irtc_qmatrix.R`,
 `R/irtc_rare_categories.R`; new tests `test-read-weights.R`,

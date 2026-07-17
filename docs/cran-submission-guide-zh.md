@@ -71,10 +71,10 @@ rm -rf IRTC.Rcheck IRTC_*.tar.gz
 
 # 3.2 构建源码包
 R CMD build IRTC
-#   -> 生成 IRTC_1.0.0.tar.gz
+#   -> 生成 IRTC_1.1.0.tar.gz
 
 # 3.3 以 CRAN 标准检查
-R CMD check IRTC_1.0.0.tar.gz --as-cran
+R CMD check IRTC_1.1.0.tar.gz --as-cran
 ```
 
 **期望结果**：仅 `1 NOTE`：
@@ -167,7 +167,7 @@ devtools::submit_cran(".../IRTC")
 ### 方式二：网页表单（手动）
 1. 打开 <https://cran.r-project.org/submit.html>
 2. 填写包名、版本、维护者姓名与邮箱
-3. 上传 `IRTC_1.0.0.tar.gz`
+3. 上传 `IRTC_1.1.0.tar.gz`
 4. 提交后，CRAN 立即给维护者邮箱发一封**确认链接**邮件——**必须点击确认**，否则提交作废。
 
 ---
@@ -234,7 +234,7 @@ Methodology follows Adams, Wilson and Wang (1997) <doi:10.1177/0146621697211001>
 ```bash
 # 构建 + 检查
 R CMD build IRTC
-R CMD check IRTC_1.0.0.tar.gz --as-cran
+R CMD check IRTC_1.1.0.tar.gz --as-cran
 
 # devtools 一条龙
 Rscript -e 'devtools::check("IRTC", args="--as-cran")'
