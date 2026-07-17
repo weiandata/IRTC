@@ -39,6 +39,14 @@ optional dependencies: none.
   Data-processing-transparency section (weights, Q alignment, category
   collapses, dropped items, scoring summary, cleaning log).
 
+## Refinements
+
+* `irtc_report()` now creates any missing parent directories of the
+  output file, matching `irtc_excel()`.
+* Automatic sampling-weight detection no longer treats a bare `w` column
+  as weights; it was an undocumented alias that could silently consume a
+  binary item column named `w`. Explicit `weights = "w"` still works.
+
 # IRTC 1.0.0
 
 First CRAN release. The estimation core is unchanged from 0.1.0; this

@@ -306,7 +306,7 @@ irtc_split_id <- function(resp, id=NULL, guess_id=TRUE, log)
 
 irtc_weight_name_pool <- function()
 {
-    c("weight", "weights", "wt", "wgt", "w", "pweight", "pweights",
+    c("weight", "weights", "wt", "wgt", "pweight", "pweights",
       "sampling_weight", "samplingweight", "case_weight", "caseweight",
       "\u6743\u91cd", "\u6837\u672c\u6743\u91cd", "\u52a0\u6743",
       "\u6743\u6570", "\u62bd\u6837\u6743\u91cd", "\u52a0\u6743\u7cfb\u6570",

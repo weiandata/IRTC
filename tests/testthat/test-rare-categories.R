@@ -20,7 +20,7 @@ irtc_test_sim_rare <- function(n=200, k=5, seed=31)
 
 test_that("irtc_rare_scan flags gaps and reduced tops", {
     resp <- data.frame(I1=c(0, 2, 2, 0), I2=c(0, 1, 1, 0),
-        I3=c(0, 1, 2, 1))
+        I3=c(0, 1, 2, 3))
     qdf <- data.frame(item=c("I1", "I2", "I3"), d1=rep(1, 3),
         max_score=c(2, 2, 3))
     qm <- irtc_read_q(qdf)
@@ -166,4 +166,32 @@ test_that("clean data passes through rare handling untouched", {
     expect_false(any(info$needs_collapse))
     expect_false(any(info$top_reduced))
     expect_equal(mod$usability$rare_mode, "collapse")
+})
+
+test_that("irtc_rare_scan ignores non-integer and negative columns", {
+    resp <- data.frame(I1=c(0.5, 1.5, 2.5), I2=c(-1, 0, 1),
+        I3=c(0, 1, 2))
+    scan <- IRTC:::irtc_rare_scan(resp)
+    ## fractional / negative items are skipped -> never flagged
+    expect_false(any(scan$needs_collapse[scan$item %in% c("I1", "I2")]))
+    expect_false(any(scan$top_reduced[scan$item %in% c("I1", "I2")]))
+})
+
+test_that("irtc_rare_prior_args returns NULL when nothing is affected", {
+    resp <- data.frame(I1=c(0, 1, 2), I2=c(0, 1, 2))
+    scan <- IRTC:::irtc_rare_scan(resp)
+    expect_null(IRTC:::irtc_rare_prior_args(resp, scan, model="PCM"))
+})
+
+test_that("prior mode logs W425 for a declared-but-unreached top category", {
+    ## no interior gap, but the Q matrix declares a higher max than any
+    ## person reached -> top_reduced only -> the prior-mode top-category
+    ## logging path fires
+    resp <- data.frame(I1=c(0, 1, 2, 1, 2, 0), I2=c(0, 1, 1, 0, 1, 1),
+        I3=c(0, 1, 2, 2, 1, 0))
+    qm <- irtc_read_q(data.frame(item=c("I1", "I2", "I3"), d1=rep(1, 3),
+        max_score=c(2, 2, 3)))
+    ap <- IRTC:::irtc_rare_apply(resp, q=qm, mode="prior", model="PCM")
+    expect_true(any(ap$log$code == "W425"))
+    expect_true(any(grepl("I3", ap$log$message_en)))
 })

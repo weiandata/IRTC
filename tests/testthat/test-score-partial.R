@@ -79,7 +79,27 @@ test_that("key file validation raises structured errors", {
     cond <- tryCatch(irtc_score(resp, key="no-such-file.xlsx"),
         condition=function(c) c)
     expect_equal(cond$code, "E103")
+    ## empty item name in the key
+    utils::write.csv(data.frame(item=c("Q1", ""), answer=c("A", "B")),
+        path, row.names=FALSE)
+    cond <- tryCatch(irtc_score(resp, key=path), condition=function(c) c)
+    expect_equal(cond$code, "E207")
+    ## missing answer value for an item
+    utils::write.csv(data.frame(item=c("Q1", "Q2"), answer=c("A", NA)),
+        path, row.names=FALSE)
+    cond <- tryCatch(irtc_score(resp, key=path), condition=function(c) c)
+    expect_equal(cond$code, "E207")
     unlink(path)
+})
+
+test_that("rules-file validation and multi-level detection cover edge cases", {
+    resp <- data.frame(Q1=c("A", "B"), stringsAsFactors=FALSE)
+    ## a missing rules file is reported like any other missing input
+    cond <- tryCatch(irtc_score(resp, rules="no-such-rules.csv"),
+        condition=function(c) c)
+    expect_equal(cond$code, "E103")
+    ## rules_multi tolerates a table without the item/score columns
+    expect_length(IRTC:::irtc_score_rules_multi(data.frame(x=1, y=2)), 0L)
 })
 
 test_that("irtc_score reads a rules table with Chinese aliases", {

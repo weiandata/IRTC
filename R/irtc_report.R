@@ -50,6 +50,10 @@ irtc_report <- function(mod, file, format=NULL,
             purpose_en="write Word reports",
             purpose_zh="\u751f\u6210 Word \u62a5\u544a")
     }
+    out_dir <- dirname(file)
+    if (!dir.exists(out_dir)) {
+        dir.create(out_dir, recursive=TRUE)
+    }
     if (is.null(resp)) resp <- mod$resp
     if (is.null(title)) {
         title <- irtc_tr("IRT Analysis Report", "IRT \u5206\u6790\u62a5\u544a", lang)

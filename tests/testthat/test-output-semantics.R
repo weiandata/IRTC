@@ -21,8 +21,19 @@ irtc_test_sim_2d <- function(n=250, seed=51)
 }
 
 test_that("param table labels partial and full difficulty for 3-cat items", {
-    data(data.gpcm)
-    mod <- irtc.mml(resp=data.gpcm, irtmodel="PCM", verbose=FALSE)
+    ## genuine 3-category (0/1/2) items -> exactly two step difficulties
+    set.seed(51)
+    n <- 400
+    theta <- stats::rnorm(n)
+    make_poly3 <- function(shift) {
+        p <- stats::plogis(theta - shift)
+        findInterval(p + stats::runif(n, -0.2, 0.2),
+            seq(0.3, 0.7, length.out=2L))
+    }
+    resp <- data.frame(I1=make_poly3(0), I2=make_poly3(0.4),
+        I3=make_poly3(-0.4))
+    mod <- irtc.mml(resp=as.matrix(resp), irtmodel="PCM", verbose=FALSE,
+        control=list(maxiter=40))
     tbl <- irtc_param_table(mod, resp=mod$resp)
     expect_true(all(c("b_partial", "b_full") %in% colnames(tbl)))
     expect_true(all(is.finite(tbl$b_partial)))
@@ -120,5 +131,8 @@ test_that("rare-category annotations flow into results items", {
     res <- irtc_results(mod)
     row <- res$items[res$items$item_id == "I1", ]
     expect_equal(row$categories_collapsed, "0->0, 2->1")
-    expect_equal(row$max_score_observed, 1L)
+    ## the raw score 2 was observed (category 1 was not), so the recorded
+    ## observed maximum is 2 with category 1 unobserved
+    expect_equal(row$max_score_observed, 2L)
+    expect_equal(row$categories_unobserved, "1")
 })

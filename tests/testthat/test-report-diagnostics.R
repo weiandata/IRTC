@@ -87,3 +87,71 @@ test_that("full report embeds the new sections for stat and survey", {
         unlink(path)
     }
 })
+
+test_that("verbose report announces the written file", {
+    resp <- irtc_test_sim_diag()
+    mod <- irtc(resp, model="1PL", verbose=FALSE)
+    path <- tempfile(fileext=".html")
+    msg <- testthat::capture_messages(
+        irtc_report(mod, path, audience="stat", lang="en", verbose=TRUE))
+    expect_true(any(grepl("Report written", msg)))
+    unlink(path)
+})
+
+test_that("irtc_report_figure returns NULL when the plot expression fails", {
+    expect_null(IRTC:::irtc_report_figure(stop("boom")))
+})
+
+test_that("diagnostics recompute item fit when it is not cached", {
+    resp <- irtc_test_sim_diag()
+    mod <- irtc(resp, model="1PL", verbose=FALSE)
+    mod$usability$itemfit <- NULL  # force the recompute branch
+    b <- irtc_report_diagnostics_blocks(mod, mod$resp, "en", detail=TRUE)
+    expect_match(block_text(b), "Infit/outfit")
+})
+
+test_that("decision texts survive a missing EAP reliability", {
+    resp <- irtc_test_sim_diag()
+    mod <- irtc(resp, model="1PL", verbose=FALSE)
+    mod$EAP.rel <- NULL
+    txt <- IRTC:::irtc_decision_texts(mod, mod$usability$quality, "en")
+    expect_type(txt, "character")
+})
+
+test_that("transparency reports removed items", {
+    resp <- irtc_test_sim_diag()
+    resp$I7 <- rep(1, nrow(resp))  # zero variance -> removed by the check
+    w <- testthat::capture_warnings(
+        mod <- irtc(resp, model="1PL", verbose=FALSE))
+    b <- irtc_report_transparency_blocks(mod, "en", detail=TRUE)
+    txt <- block_text(b)
+    expect_match(txt, "removed")
+    expect_match(txt, "I7")
+})
+
+test_that("transparency reports the partial-credit scoring summary", {
+    set.seed(71)
+    n <- 200
+    theta <- stats::rnorm(n)
+    gen_item <- function(shift) {
+        u <- stats::plogis(theta - shift)
+        r <- stats::runif(n)
+        ifelse(r < u * 0.5, "A", ifelse(r < u, "B",
+            sample(c("C", "D"), n, replace=TRUE)))
+    }
+    raw <- data.frame(id=paste0("S", seq_len(n)),
+        Q1=gen_item(0), Q2=gen_item(0.3), Q3=gen_item(-0.3),
+        stringsAsFactors=FALSE)
+    dp <- tempfile(fileext=".csv")
+    utils::write.csv(raw, dp, row.names=FALSE)
+    kp <- tempfile(fileext=".csv")
+    utils::write.csv(data.frame(item=paste0("Q", 1:3), answer="A",
+        partial_answer="B"), kp, row.names=FALSE)
+    mod <- suppressWarnings(irtc(dp, model="GPCM", key=kp, verbose=FALSE,
+        control=list(maxiter=40)))
+    b <- irtc_report_transparency_blocks(mod, "en", detail=TRUE)
+    txt <- block_text(b)
+    expect_match(txt, "Scoring")
+    expect_match(txt, "partial credit")
+    unlink(c(dp, kp))
+})

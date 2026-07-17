@@ -116,6 +116,43 @@ test_that("irtc_read_q validates its input", {
     expect_equal(cond$code, "E115")
 })
 
+test_that("irtc_read_q reports missing files and empty / bad ID columns", {
+    cond <- tryCatch(irtc_read_q("no_such_q_file_xyz.csv"),
+        condition=function(c) c)
+    expect_equal(cond$code, "E103")
+    ## empty data frame -> empty-matrix error
+    cond <- tryCatch(irtc_read_q(data.frame()), condition=function(c) c)
+    expect_equal(cond$code, "E110")
+    ## all-numeric columns, no name in the item pool -> no ID column
+    cond <- tryCatch(irtc_read_q(data.frame(a=c(1, 2), b=c(1, 0))),
+        condition=function(c) c)
+    expect_equal(cond$code, "E111")
+    ## an ID column that contains an empty value
+    cond <- tryCatch(
+        irtc_read_q(data.frame(item=c("I1", ""), d1=c(1, 1))),
+        condition=function(c) c)
+    expect_equal(cond$code, "E111")
+    ## a numeric matrix without rownames falls through to the data-frame
+    ## path and then fails to find an ID column
+    cond <- tryCatch(irtc_read_q(matrix(c(1, 0, 1, 0), 2)),
+        condition=function(c) c)
+    expect_equal(cond$code, "E111")
+})
+
+test_that("irtc_align_q reads a raw Q input and validates the data type", {
+    resp <- irtc_test_sim_q(n=15, k=3)  # I1..I3
+    ## pass a raw data.frame (not yet an irtc_qmatrix): align reads it
+    al <- irtc_align_q(resp, data.frame(item=c("I1", "I2", "I3"),
+        d1=rep(1, 3)))
+    expect_equal(rownames(al$q$Q), c("I1", "I2", "I3"))
+    ## a non-data input for 'data' is rejected
+    cond <- tryCatch(
+        irtc_align_q(1:3, irtc_read_q(data.frame(item=c("I1", "I2"),
+            d1=c(1, 1)))),
+        condition=function(c) c)
+    expect_equal(cond$code, "E201")
+})
+
 test_that("irtc_align_q warns and aligns on mismatch", {
     resp <- irtc_test_sim_q(n=20, k=4)  # I1..I4
     qdf <- data.frame(item=c("I1", "I2", "I3", "I9"), d1=c(1, 1, 1, 1))
