@@ -1,20 +1,60 @@
-# IRTC User Manual (English)
+# IRTC User Manual (English) — V1.0.0
 
-**An R package for item response theory estimation — for the complete newcomer**
+**An R package for item response theory estimation — from complete newcomer to production pipeline**
 
-IRTC is a **self-contained marginal maximum likelihood (MML) estimation** package for item response theory (IRT). It estimates unidimensional and multidimensional Rasch, partial credit (PCM), rating scale (RSM), 2PL, and generalized partial credit (GPCM) models, supports latent regression, multiple groups, and case weights, and ships a parallel **streaming estimation engine** with a **controlled-accuracy** acceleration mode that can calibrate millions of respondents on an ordinary laptop.
+IRTC is a **self-contained marginal maximum likelihood (MML) estimation** package for item response theory (IRT). It estimates unidimensional and multidimensional Rasch, partial credit (PCM), rating scale (RSM), 2PL, and generalized partial credit (GPCM) models, supports latent regression, multiple groups, and case weights.
 
-> Five parts: ① Quick start ② Full function reference ③ Mathematics and principles ④ Complete troubleshooting ⑤ References.
+## Why IRTC (what sets it apart)
+
+Mainstream IRT packages (TAM, mirt, ltm, ...) assume you are a statistical
+programmer: you prepare a clean numeric matrix by hand and dig the results
+out of a model object yourself. IRTC 1.0 covers both ends of the pipeline
+as well:
+
+- **Data gets in (input advantage).** Reads Excel (.xlsx/.xls), CSV/TSV
+  (delimiter and UTF-8/GBK encoding auto-detected), SPSS (.sav), Stata
+  (.dta), SAS (.sas7bdat) and R data frames directly; detects and sets
+  aside person-ID columns, recodes missing codes, and scores raw A/B/C/D
+  answers against a key. Every cleaning action is logged and traceable.
+- **Results get out (output advantage).** One call writes three
+  deliverable-ready Excel workbooks (a colour-coded item quality table, a
+  frozen-schema item parameter table for cross-year linking, and a
+  paste-ready person ability table) plus Word/HTML reports in three
+  audience layouts (decision makers / survey staff / statisticians), all
+  bilingual (English/Chinese).
+- **It is fast (speed advantage).** The estimation core is parallelised
+  Rcpp/C++ with SQUAREM/over-relaxation acceleration, and an opt-in
+  **controlled-accuracy** mode prunes negligible-weight quadrature nodes
+  and reports the **measured** approximation error (exact computation
+  remains the default).
+- **It scales (scale advantage).** A bounded-memory **streaming engine**
+  never materialises the persons-by-nodes posterior matrix, so large
+  between-item multidimensional models with millions of responses
+  calibrate on an ordinary laptop; engine routing is automatic.
+- **Two APIs, four audiences.** Non-specialists run one line —
+  `irtc("data.xlsx", model = "1PL")`; statisticians keep the full
+  TAM-style expert API (`irtc.mml()`, `irtc.mml.2pl()`); decision makers
+  get reports; AI agents get machine-readable results.
+- **AI/pipeline-ready.** Frozen-schema tidy results
+  (`irtc_results()`/`irtc_json()`), structured error conditions with
+  code/reason/fix fields, and a bundled `llms.txt` API digest — one of the
+  first IRT packages designed for automated callers.
+- **Verifiable quality.** 975 automated tests, 95% overall code coverage
+  (>= 95% on every key module), `R CMD check --as-cran` clean on macOS,
+  Windows and Linux CI.
+
+> Six parts: ① Quick start ② Full function reference ③ Mathematics and principles ④ Complete troubleshooting ⑤ References ⑥ End-to-end walkthrough.
 
 ---
 
 ## Contents
 
 1. [Quick Start Guide](#1-quick-start-guide)
-2. [Full Function Reference](#2-full-function-reference)
+2. [Full Function Reference](#2-full-function-reference) — main workflow in [2.1](#21-the-main-workflow-functions-complete-reference), expert estimation in 2.2-2.5
 3. [Mathematics and Principles](#3-mathematics-and-principles)
 4. [Complete Troubleshooting Manual](#4-complete-troubleshooting-manual)
 5. [References and Bibliography](#5-references-and-bibliography)
+6. [End-to-End Walkthrough (the workflow in practice)](#6-end-to-end-walkthrough-the-workflow-in-practice)
 
 ---
 
@@ -31,56 +71,76 @@ Higher ability θ and lower item difficulty b_j mean a higher probability of a c
 ## 1.2 Installation
 
 ```r
-# from source (contains C++, needs a compiler)
-install.packages("path/to/IRTC_0.1.0.tar.gz", repos = NULL, type = "source")
+# from CRAN (once accepted)
+install.packages("IRTC")
+
+# or from a source tarball (contains C++, needs a compiler)
+install.packages("path/to/IRTC_1.0.0.tar.gz", repos = NULL, type = "source")
 library(IRTC)
+
+# optional helpers, installed on demand (Excel/SPSS import, Excel/Word
+# output, JSON): readxl, haven, openxlsx, officer, jsonlite
 ```
 
-## 1.3 First example: Rasch model (5 lines)
+## 1.3 First analysis: one line from file to fitted model
 
 ```r
 library(IRTC)
+mod <- irtc("responses.xlsx", model = "1PL")   # read + clean + check + estimate + rate
+plain_summary(mod)                             # plain-language summary, conclusion first
+```
+
+`irtc()` reads the file (Excel, CSV/TSV, SPSS, Stata, SAS or a data
+frame), detects and sets aside the person-ID column, recodes missing
+codes and Likert categories, checks the data, fits the requested model
+and attaches item quality ratings. `model` is required — right/wrong
+items: `"1PL"` or `"2PL"`; partial-credit or rating items: `"PCM"` or
+`"GPCM"`. Raw A/B/C/D answers? Add `key = c(Q1 = "A", Q2 = "C", ...)`.
+
+## 1.4 Deliverables: Excel tables, reports, plots
+
+```r
+irtc_excel(mod, dir = "results")     # 3 workbooks: quality / parameters / abilities
+irtc_report(mod, "report.docx", audience = "decision")   # 1-2 page executive summary
+irtc_report(mod, "report.html", audience = "stat")       # full technical report
+plot(mod, type = "wright")           # also "ability", "quality", "icc"
+mod$usability$quality                # per-item rating with reasons and advice
+```
+
+## 1.5 The expert path (unchanged TAM-style API)
+
+Statisticians can call the estimation functions directly on a prepared
+numeric matrix — every advanced option (latent regression, groups,
+weights, fixed parameters, custom designs) lives here, and `irtc()`
+passes all of them through via `...`:
+
+```r
 data(data.sim.rasch)                    # bundled: 2000 persons x 40 items, 0/1
-mod <- irtc.mml(resp = data.sim.rasch)  # estimate 1PL/Rasch (default)
-summary(mod)                            # item params, ability variance, AIC/BIC
-```
-
-## 1.4 Second example: 2PL (with discrimination)
-
-```r
+mod  <- irtc.mml(resp = data.sim.rasch)                    # Rasch/1PL
 mod2 <- irtc.mml.2pl(resp = data.sim.rasch, irtmodel = "2PL")
-summary(mod2)        # each item now also has a discrimination a_j
-```
-
-## 1.5 Third example: multidimensional + GPCM (polytomous)
-
-```r
-data(data.gpcm)
-Q <- matrix(1, nrow = ncol(data.gpcm), ncol = 1)   # loading (Q) matrix
-mod3 <- irtc.mml.2pl(resp = data.gpcm, irtmodel = "GPCM", Q = Q)
-summary(mod3)
+summary(mod2)
+anova(mod, mod2)                        # likelihood-ratio comparison
 ```
 
 ## 1.6 Standard ways to read results
 
 ```r
-mod$xsi          # item parameters (intercepts / difficulties)
-mod$person       # per-person ability point estimates (EAP)
-mod$variance     # ability (co)variance
-logLik(mod)      # log-likelihood
-anova(mod, mod2) # likelihood-ratio test of two nested models
+plain_summary(mod)   # conclusion-first text (zh/en)
+summary(mod)         # full technical summary
+mod$xsi              # item parameters (difficulties)
+mod$person$EAP       # per-person ability estimates
+irtc_results(mod)    # frozen-schema tidy data frames (pipelines/AI)
 ```
 
-## 1.7 Speed: the streaming engine for big data
+## 1.7 Speed and scale: the streaming engine for big data
 
-For large, multidimensional, simple-structure data, let the engine pick the fastest path and optionally enable approximate acceleration:
+For large, multidimensional, simple-structure data, let the engine pick
+the fastest path and optionally enable controlled-accuracy acceleration:
 
 ```r
-mod_fast <- irtc.mml.2pl(
-  resp = big_resp, irtmodel = "GPCM", Q = Qmatrix,
+mod_fast <- irtc("big.csv", model = "GPCM", Q = Qmatrix,
   method = "auto",                                    # auto-select grid / streaming
-  control = list(fast = TRUE, mass_budget = 1e-3)     # controlled-accuracy acceleration
-)
+  control = list(fast = TRUE, mass_budget = 1e-3))    # accuracy-controlled pruning
 mod_fast$routing            # which engine and why
 mod_fast$accuracy_report    # measured approximation error (met=TRUE = within tolerance)
 ```
@@ -89,9 +149,119 @@ mod_fast$accuracy_report    # measured approximation error (met=TRUE = within to
 
 # 2. Full Function Reference
 
-IRTC exports **2 estimation functions** and **4 S3 methods**.
+IRTC 1.0.0 exports the **main workflow functions** (2.1 — start here),
+the **expert estimation functions** `irtc.mml()` / `irtc.mml.2pl()`
+(2.2-2.5) and **6 S3 methods** (`summary`, `print`, `logLik`, `anova`,
+`plot`, plus class-specific `print` methods).
 
-## 2.1 `irtc.mml()` — fixed-slope models (Rasch / PCM / RSM)
+## 2.1 The main workflow functions (complete reference)
+
+These functions are the primary interface of IRTC. Details: `?function_name` in R. Output
+language for all user-facing text: `options(irtc.lang = "zh")` (default) or
+`"en"`; machine-readable schemas never depend on it (`irtc_lang()` shows the
+current setting).
+
+| Layer | Function | Purpose |
+| --- | --- | --- |
+| One-stop | `irtc()` | file/data frame -> clean -> score -> check -> estimate -> quality ratings |
+| Data | `irtc_read()` | multi-format import with automatic cleaning and a bilingual log |
+| Data | `irtc_score()` | answer-key (0/1) or rules-table (partial credit) scoring |
+| Data | `irtc_check_data()` | pre-estimation diagnostics with machine-readable fixes |
+| Statistics | `irtc_ctt()` | classical difficulty, item-rest correlations, Cronbach's alpha |
+| Statistics | `irtc_itemfit()` | infit/outfit mean squares with Wilson-Hilferty t |
+| Statistics | `irtc_quality()` | four-level plain-language item ratings with reasons and advice |
+| Output | `plain_summary()` | layered plain-language summary, conclusion first |
+| Output | `irtc_excel()` | three Excel workbooks: quality / linking parameters / abilities |
+| Output | `irtc_param_table()` / `irtc_person_table()` | the underlying data frames (no openxlsx needed) |
+| Output | `irtc_report()` | Word/HTML reports for decision / survey / stat audiences |
+| Output | `plot()` (plot.irtc) | Wright map, ability histogram, quality summary, ICC curves |
+| AI | `irtc_results()` / `irtc_json()` | frozen-schema tidy results (v1.0) and JSON export |
+
+### `irtc(data, model, key = NULL, rules = NULL, id = NULL, sheet = 1, missing_codes = c(-9, -99, 99, 999), check = TRUE, quality = TRUE, verbose = TRUE, ...)`
+
+`data` is a file path (.xlsx/.xls/.csv/.tsv/.txt/.dat/.sav/.por/.dta/
+.sas7bdat/.xpt), a data frame/matrix, or an `irtc_read()` result. `model`
+is **required**: `"1PL"` (= `"Rasch"`), `"2PL"`, `"PCM"`, `"PCM2"`,
+`"RSM"`, `"GPCM"` (case-insensitive). `...` passes through to
+`irtc.mml()` / `irtc.mml.2pl()` unchanged, so every expert argument still
+works. Returns a standard `irtc` object plus `$usability` (cleaning log,
+check result, CTT, item fit, quality ratings). Unusable items (all-missing
+or zero-variance) are removed with warning `W410`.
+
+### `irtc_read(x, sheet = 1, id = NULL, missing_codes = c(-9, -99, 99, 999), na_strings = ..., guess_id = TRUE, clean = TRUE, recode = TRUE, verbose = TRUE)`
+
+Delimiter (comma/tab/semicolon/pipe) and encoding (UTF-8, UTF-8-BOM,
+GBK/GB18030) are detected automatically. Negative missing codes are always
+recoded to NA; positive codes only when clearly outside the observed
+response range (protects a legitimate 99 on a 0-100 scale). With
+`recode = TRUE`, integer categories become consecutive 0-based scores
+(1-5 Likert -> 0-4), logged per item. Returns an `irtc_data` object with
+`$resp`, `$pid` and the bilingual `$log`.
+
+### `irtc_score(resp, key = NULL, rules = NULL, na_as_wrong = FALSE)`
+
+`key` is a named vector such as `c(Q1 = "A", Q2 = "C")` (case,
+whitespace and full-width characters are normalised). `rules` is a data
+frame (item, response, score) for partial credit; responses without a rule
+become NA with warning `W207`.
+
+### `irtc_check_data(x, key = NULL, verbose = TRUE)`
+
+Checks sizes, non-numeric columns, negative/non-integer values,
+zero-variance items, extreme missingness, sparse categories, all-missing
+persons and duplicated IDs. Returns `$ok` plus an `$issues` data frame
+(code, severity, where, bilingual message and fix) that automated callers
+can act on row by row.
+
+### `irtc_ctt(x, key = NULL)` / `irtc_itemfit(mod, resp = NULL)` / `irtc_quality(mod, resp = NULL, thresholds = NULL)`
+
+Classical statistics; residual-based infit/outfit at the EAP estimates
+(ideal 1.0, normal range 0.7-1.3); and the combined four-level rating
+(good / acceptable / review / revise) with bilingual reasons and advice.
+Negative discrimination (usually a wrong key) always yields "revise".
+Defaults come from `irtc_quality_thresholds()` and can be overridden.
+
+### `plain_summary(mod, lang = irtc_lang())`
+
+Prints conclusion -> analysis overview -> item quality -> ability
+distribution -> next steps, in plain language.
+
+### `irtc_excel(mod, dir = ".", prefix = "IRTC", lang = irtc_lang(), resp = NULL, overwrite = FALSE, verbose = TRUE)`
+
+Writes three separate .xlsx files (requires openxlsx):
+`*_item_quality.xlsx` (colour-coded ratings + advice + notes sheet),
+`*_item_parameters.xlsx` (frozen schema v1.0 - merge anchor items across
+years on `item_id`), `*_person_ability.xlsx` (rows stay in input order).
+Existing files require `overwrite = TRUE` (error `E501` otherwise).
+
+### `irtc_report(mod, file, format = NULL, audience = c("survey", "decision", "stat"), lang = irtc_lang(), ...)`
+
+`.html` output is a fully self-contained single file (no extra
+dependencies); `.docx` requires officer. The decision layout is a 1-2 page
+executive summary; survey is a plain-language full report; stat adds
+parameter, fit and model-information tables plus ICC curves.
+
+### `plot(mod, type = c("wright", "ability", "quality", "icc"), lang = irtc_lang(), items = NULL)`
+
+The same base-graphics figures that the reports embed; `type = "icc"`
+accepts an `items =` selection (unidimensional models).
+
+### `irtc_results(mod, resp = NULL)` / `irtc_json(mod, file = NULL, resp = NULL, pretty = TRUE)`
+
+Five frozen-schema data frames: `model_info`, `items` (parameters + CTT +
+fit + ratings), `persons`, `cleaning_log`, `check_issues`. Column names
+are fixed English snake_case regardless of the language option. Full
+schema reference: `inst/llms.txt` inside the installed package.
+
+### Structured conditions
+
+Every error/warning of the usability layer carries `$code`, `$reason`,
+`$fix` and `$data`, with domain classes for programmatic handling:
+`tryCatch(expr, irtc_error = function(e) e$code)`. Code ranges: E0xx
+missing dependency, E1xx reading, E2xx scoring, E3xx validation, E4xx
+estimation, E5xx export/report.
+
+## 2.2 `irtc.mml()` — fixed-slope models (Rasch / PCM / RSM)
 
 **Purpose**: models with slope fixed to 1 (1PL/Rasch, PCM, RSM), uni- or multidimensional.
 
@@ -110,7 +280,7 @@ IRTC exports **2 estimation functions** and **4 S3 methods**.
 | `variance.fixed` | fix (co)variance elements | `NULL` |
 | `est.variance` | whether to estimate the variance | `TRUE` |
 | `verbose` | print iteration progress | `TRUE` |
-| `control` | control list (see 2.4) | `list()` |
+| `control` | control list (see 2.5) | `list()` |
 
 **Returns**: an `irtc` object with `xsi` (item parameters), `person` (per-person EAP), `variance`, `beta` (regression coefficients), `ic` (AIC/BIC), `deviance`, etc.
 
@@ -123,7 +293,7 @@ m <- irtc.mml(resp = dat, Y = cbind(1, X))     # latent regression
 m <- irtc.mml(resp = dat, pweights = w)        # case weights
 ```
 
-## 2.2 `irtc.mml.2pl()` — models with discrimination (2PL / GPCM)
+## 2.3 `irtc.mml.2pl()` — models with discrimination (2PL / GPCM)
 
 **Purpose**: estimable slopes — 2PL, GPCM and variants (GPCM.design, 2PL.groups, GPCM.groups). **This is the entry point to the streaming engine.**
 
@@ -135,7 +305,7 @@ m <- irtc.mml(resp = dat, pweights = w)        # case weights
 | `method` | engine: `"auto"`/`"grid"`/`"streaming"` | `"auto"` |
 | `est.slopegroups` | groups of items sharing a discrimination | `NULL` |
 | `E` | design matrix for slopes (GPCM.design) | `NULL` |
-| `control` | see 2.4 — streaming / acceleration settings live here | `list()` |
+| `control` | see 2.5 — streaming / acceleration settings live here | `list()` |
 
 **The three engines**:
 - `"grid"`: standard full-quadrature; works for any supported model; robust.
@@ -153,7 +323,7 @@ m$variance     # a list with multiple groups: one covariance per group
 m$gmean        # group ability means (reference group fixed at 0)
 ```
 
-## 2.3 S3 methods
+## 2.4 S3 methods
 
 | Method | Effect |
 |---|---|
@@ -162,7 +332,7 @@ m$gmean        # group ability means (reference group fixed at 0)
 | `logLik(obj)` | log-likelihood (with df); works with `AIC()`/`BIC()` |
 | `anova(obj1, obj2)` | likelihood-ratio test of two nested models |
 
-## 2.4 Full `control` list
+## 2.5 Full `control` list
 
 | Item | Meaning | Default |
 |---|---|---|
@@ -273,6 +443,25 @@ against per-metric tolerances `tol_*`, with a `met` verdict (all four 95th-perce
 
 # 4. Complete Troubleshooting Manual
 
+## 4.0 Start here: the V1.0 error-code system
+
+Every error and warning raised by the workflow layer carries a code, a
+reason and a **Fix** line — follow the fix first. Code ranges:
+
+| Range | Stage | Typical example |
+| --- | --- | --- |
+| E001 | missing optional package | run the suggested `install.packages(...)` and retry |
+| E1xx | reading files | E103 file not found; E105 unsupported extension |
+| E2xx | answer-key scoring | E204 key item not present in the data |
+| E3xx | data checks | E305 text columns (supply `key=`); E308 negative values |
+| E4xx | estimation | E406 missing `model=`; E407 data check failed (with issue list); E408 estimation failed |
+| E5xx | export/reports | E501 file exists (use `overwrite=TRUE`) |
+
+Programmatic handling: `tryCatch(expr, irtc_error = function(e) e$code)`.
+The sections below cover engine-level problems, which mostly arise when
+calling the expert functions directly on hand-prepared matrices.
+
+
 The tables below cover every error/warning IRTC raises plus common IRT estimation pitfalls. **Left column: what you see (or observe); right: cause and fix.**
 
 ## 4.1 Input and arguments
@@ -349,10 +538,9 @@ The tables below cover every error/warning IRTC raises plus common IRT estimatio
 
 *This manual corresponds to IRTC 0.1.0. Function signatures are authoritative in the package help pages `?irtc.mml` and `?irtc.mml.2pl`.*
 
-# 6. The Usability Layer (new in 1.0.0)
+# 6. End-to-End Walkthrough (the workflow in practice)
 
-The functions in this chapter wrap the expert API from Chapter 2 for three
-new audiences: survey staff without statistical training, automated
+This chapter walks the main workflow end to end for three audiences: survey staff without statistical training, automated
 pipelines / AI agents, and decision makers who receive the results. The
 expert API is unchanged; everything here is optional.
 
