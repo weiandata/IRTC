@@ -60,7 +60,7 @@ When \code{fast=TRUE} the streaming engine prunes quadrature nodes by a calibrat
 An object of class \code{irtc} (see \code{\link{irtc.mml}}) with, in addition,
 the estimated slope array \code{B} and the slope parameter vector. Streaming-engine
 fits also carry a \code{routing} component (chosen engine and reasoning) and, when
-\code{fast=TRUE} with verification on, an \code{accuracy_report} — a measured,
+\code{fast=TRUE} with verification on, an \code{accuracy_report}: a measured,
 stratified approximation check (per-metric error quantiles plus a \code{met}
 verdict), \emph{not} a strict mathematical error bound.
 }

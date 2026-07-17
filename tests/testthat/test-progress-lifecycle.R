@@ -66,7 +66,7 @@ test_that("multiple-group guard rejects unsupported multidimensional fits", {
 
 test_that("package lifecycle helpers expose version and alignment text", {
     info <- IRTC:::version("IRTC")
-    expect_match(info, "^IRTC [^ ]+  ")
+    expect_match(info, "^IRTC [^ ]+ \\d{4}-\\d{2}-\\d{2} ")
     expect_match(
         info,
         normalizePath(dirname(system.file(package="IRTC")), winslash="/"),

@@ -20,7 +20,7 @@ returned object, so results remain traceable.
 irtc_read(x, sheet = 1, id = NULL, weights = NULL,
     missing_codes = c(-9, -99, 99, 999),
     na_strings = c("", "NA", "N/A", "n/a", ".", "*",
-        "缺失", "无", "空"),
+        "\\u7f3a\\u5931", "\\u65e0", "\\u7a7a"),
     guess_id = TRUE, guess_weights = TRUE, clean = TRUE, recode = TRUE,
     verbose = TRUE)
 
@@ -42,8 +42,9 @@ irtc_read(x, sheet = 1, id = NULL, weights = NULL,
 \item{na_strings}{Strings treated as missing in text columns.}
 \item{weights}{Sampling weight column, by name or index. If \code{NULL}
     and \code{guess_weights} is \code{TRUE}, common weight column names
-    (\code{weight}, \code{wt}, \code{pweight}, 权重, 样本权重, etc., in
-    English and Chinese) are detected automatically. The column is set
+    (\code{weight}, \code{wt}, \code{pweight}, \zh{权重}{\\u6743\\u91cd},
+    \zh{样本权重}{\\u6837\\u672c\\u6743\\u91cd}, etc., in English and
+    Chinese) are detected automatically. The column is set
     aside as \code{$weights} and later used as \code{pweights} by
     \code{\link{irtc}}. Weights must be positive numbers; missing weights
     are set to 1 with a warning.}

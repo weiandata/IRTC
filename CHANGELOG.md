@@ -11,6 +11,29 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 - Add future changes here before release.
 
+## [1.1.1] - 2026-07-17
+
+Packaging-only release addressing the CRAN incoming pre-test results for
+1.1.0. No API and no estimation results change.
+
+### Added
+
+- Add a `Date` field to DESCRIPTION. Without it the package banner printed an
+  empty date, as in `IRTC 1.1.0 ()`.
+
+### Fixed
+
+- Build the PDF reference manual without LaTeX errors. Literal CJK
+  characters in `irtc_read.Rd`, `irtc_read_q.Rd` and `irtc_score.Rd` have no
+  definition in the LaTeX encoding used for the manual. `\usage` now writes
+  the affected defaults as `\uxxxx` escapes (identical R strings), and prose
+  uses the new `\zh` macro (`man/macros/irtc.Rd`), which renders the Chinese
+  characters in HTML/text help and the ASCII escape in the PDF.
+- Stop assuming the released R version wording in
+  `tests/testthat/test-print-session.R`: `R.version.string` begins
+  `"R Under development (unstable)"` on r-devel, which failed the r-devel
+  check flavors. The assertions now compare against `R.version.string`.
+
 ## [1.1.0] - 2026-07-17
 
 Usability release for the GPCM / multidimensional workflow. The estimation

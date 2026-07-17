@@ -1,7 +1,8 @@
 Package: IRTC
 Type: Package
 Title: Marginal Maximum Likelihood Estimation for Item Response Models
-Version: 1.1.0
+Version: 1.1.1
+Date: 2026-07-17
 Authors@R: c(
     person("Kunxiang", "Ma", role = c("aut", "cre"),
            email = "makunxiang@weiandata.com"),

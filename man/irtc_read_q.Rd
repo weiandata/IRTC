@@ -46,16 +46,19 @@ irtc_align_q(data, q, on_mismatch = c("warn", "error"))
 Expected table layout for \code{irtc_read_q}:
 
 \itemize{
-\item An item-ID column named \code{item}, \code{item_id}, 题目, 题号
+\item An item-ID column named \code{item}, \code{item_id},
+    \zh{题目}{\\u9898\\u76ee}, \zh{题号}{\\u9898\\u53f7}
     (etc.); if no such name is found, the first non-numeric column is
     used.
 \item One or more numeric dimension columns; each header is a dimension
-    name (e.g. 代数, \code{algebra}). Values are usually 0/1 loadings.
-    Empty cells count as 0. Every item must load on at least one
-    dimension.
+    name (e.g. \zh{代数}{\\u4ee3\\u6570}, \code{algebra}). Values are
+    usually 0/1 loadings. Empty cells count as 0. Every item must load
+    on at least one dimension.
 \item Optionally one partial-credit column named \code{partial},
-    \code{max_score}, 分部计分, 满分 (etc.). Values may be 0/1,
-    \code{TRUE}/\code{FALSE}, yes/no, 是/否, or integer maximum scores
+    \code{max_score}, \zh{分部计分}{\\u5206\\u90e8\\u8ba1\\u5206},
+    \zh{满分}{\\u6ee1\\u5206} (etc.). Values may be 0/1,
+    \code{TRUE}/\code{FALSE}, yes/no, \zh{是}{\\u662f}/\zh{否}{\\u5426},
+    or integer maximum scores
     (a value >= 2 declares a partial-credit item and records its
     maximum score).
 }

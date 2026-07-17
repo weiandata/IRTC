@@ -1,3 +1,25 @@
+# IRTC 1.1.1
+
+Packaging-only release addressing the CRAN incoming pre-test results for
+1.1.0. No user-visible behaviour, no API and no estimation results change.
+
+## Documentation
+
+* The Rd sources reaching LaTeX are now ASCII, so the PDF reference manual
+  builds without errors. Chinese column-name aliases are still documented:
+  the new `\zh` Rd macro shows the Chinese characters in the HTML and text
+  help and the equivalent `\uxxxx` escape in the PDF manual.
+
+* DESCRIPTION gains a `Date` field, so the package banner reads
+  `IRTC 1.1.1 (2026-07-17)` instead of `IRTC 1.1.1 ()`.
+
+## Internal
+
+* `tests/testthat/test-print-session.R` no longer assumes the released R
+  wording `"R version"`, which does not hold on r-devel
+  (`"R Under development (unstable)"`). It now compares against
+  `R.version.string`.
+
 # IRTC 1.1.0
 
 Usability release focused on the GPCM / multidimensional workflow. The

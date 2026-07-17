@@ -12,8 +12,14 @@ test_that("package and session helpers report runtime identity", {
     package <- irtc_packageinfo("IRTC")
     session <- irtc_rsessinfo()
 
-    expect_match(package, "^IRTC [^ ]+ \\(")
-    expect_match(session, "^R version .* \\| nodename=")
+    ## The trailing parentheses carry the DESCRIPTION Date field; require a
+    ## date so a missing field cannot silently print "IRTC 1.1.1 ()".
+    expect_match(package, "^IRTC [^ ]+ \\(\\d{4}-\\d{2}-\\d{2}\\)$")
+    ## R.version.string is "R version x.y.z ..." on released R but
+    ## "R Under development (unstable) ..." on r-devel, so match it
+    ## literally rather than assuming the released wording.
+    expect_true(startsWith(session, R.version.string))
+    expect_match(session, " \\| nodename=")
     expect_match(session, " \\| login=")
 
     combined <- paste(
@@ -21,7 +27,7 @@ test_that("package and session helpers report runtime identity", {
         collapse="\n"
     )
     expect_match(combined, package, fixed=TRUE)
-    expect_match(combined, "R version")
+    expect_match(combined, R.version.string, fixed=TRUE)
 })
 
 test_that("computation-time printer reports date and elapsed duration", {

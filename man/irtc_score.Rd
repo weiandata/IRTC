@@ -13,10 +13,12 @@ full-width characters are converted to half-width.
 
 Both \code{key} and \code{rules} may also be file paths in any format
 supported by \code{\link{irtc_read}}. A key file needs an item column
-(\code{item}, 题目, ...) and an answer column (\code{answer}, 答案,
-...); an optional partial-answer column (\code{partial_answer},
-部分正确答案, ...) lists answers worth partial credit, several
-separated by \code{|}, \code{;}, \code{,} or 、. Items with partial
+(\code{item}, \zh{题目}{\\u9898\\u76ee}, ...) and an answer column
+(\code{answer}, \zh{答案}{\\u7b54\\u6848}, ...); an optional
+partial-answer column (\code{partial_answer},
+\zh{部分正确答案}{\\u90e8\\u5206\\u6b63\\u786e\\u7b54\\u6848}, ...)
+lists answers worth partial credit, several separated by \code{|},
+\code{;}, \code{,} or \zh{、}{\\u3001}. Items with partial
 answers are scored full = 2, partial = 1, other = 0; items without stay
 0/1. For more than three score levels supply an explicit \code{rules}
 table instead.
@@ -34,7 +36,9 @@ irtc_score(resp, key = NULL, rules = NULL, na_as_wrong = FALSE,
     columns by position. Items not named in the key are left unchanged.}
 \item{rules}{A data frame with columns \code{item}, \code{response},
     \code{score} defining partial-credit scoring, or a path to such a
-    table (Chinese column aliases 题目/作答/分值 are accepted). Observed
+    table (Chinese column aliases \zh{题目}{\\u9898\\u76ee},
+    \zh{作答}{\\u4f5c\\u7b54} and \zh{分值}{\\u5206\\u503c} are
+    accepted). Observed
     responses without a rule are set to \code{NA} with a warning of class
     \code{irtc_warning_scoring}.}
 \item{na_as_wrong}{Logical: score missing responses as 0 instead of
