@@ -2,8 +2,13 @@
 
 > 本指南面向第一次向 CRAN 提交 R 包的作者，覆盖从准备、检查、构建、提交到收到结果后处理的**完整流程**，并列出 IRTC 的包级合规检查要求。
 >
-> 当前状态：最近一次完整 `R CMD check --as-cran --no-manual` 为 0 ERROR、
-> 0 WARNING、1 NOTE；唯一 NOTE 是首次提交的 “New submission”。
+> 当前状态：1.1.1 已提交 CRAN 人工审核。最近一次完整 `R CMD check --as-cran`
+> 为 0 ERROR、0 WARNING、1 NOTE（“New submission” + 拼写误报）；win-builder
+> R-devel 复验同为 1 NOTE。
+>
+> **1.1.0 曾被 incoming 自动预检退回**（2 ERROR / 1 WARNING）。退回原因、根因分析与
+> 修复方式见 [CRAN 提交实战记录：1.1.0 被拒与 1.1.1 重投](cran-submission-1.1.1-zh.md)。
+> 本指南讲“该怎么做”，那篇讲“实际发生了什么”。
 
 ---
 
@@ -22,7 +27,7 @@ CRAN 会给 `DESCRIPTION` 里 `cre`（maintainer）那个邮箱发**确认邮件
 person("Kunxiang", "Ma", role = c("aut", "cre"), email = "makunxiang@weiandata.com")
 ```
 
-**⚠️ 务必核对姓名拼写**（我是从用户名推断的 “Kunxiang Ma”）。改法：编辑 `IRTC/DESCRIPTION` 的 `Authors@R`。维护者邮箱要长期有效，CRAN 后续所有沟通都走这个邮箱。
+姓名与邮箱已随 1.1.0 / 1.1.1 提交并由 CRAN 确认送达。如需变更，编辑仓库根目录 `DESCRIPTION` 的 `Authors@R`。维护者邮箱要长期有效，CRAN 后续所有沟通都走这个邮箱。
 
 ### 1.2 所有权、许可证与依赖边界（重要）
 
@@ -60,52 +65,66 @@ install.packages(c("devtools", "rhub", "spelling", "urlchecker"))
 
 ## 3. 本地完整检查（必须全绿）
 
-在仓库根目录（包含 `IRTC/` 子目录）执行：
+**包本身就在仓库根目录**（`DESCRIPTION` 与 `.git` 同级），没有 `IRTC/` 子目录。
 
 ```bash
 cd "<repo-root>"
 
 # 3.1 清理旧产物
-find IRTC/src -name '*.o' -delete; find IRTC/src -name '*.so' -delete
+find src -name '*.o' -delete; find src -name '*.so' -delete
 rm -rf IRTC.Rcheck IRTC_*.tar.gz
 
 # 3.2 构建源码包
-R CMD build IRTC
-#   -> 生成 IRTC_1.1.0.tar.gz
+R CMD build .
+#   -> 生成 IRTC_<版本>.tar.gz
 
 # 3.3 以 CRAN 标准检查
-R CMD check IRTC_1.1.0.tar.gz --as-cran
+R CMD check IRTC_<版本>.tar.gz --as-cran
 ```
 
-**期望结果**：仅 `1 NOTE`：
+> **生成正式提交产物时**，建议从干净的 git 导出再构建，确保 tar.gz 与仓库状态
+> 逐字节对应、不夹带本地未跟踪文件：
+>
+> ```bash
+> git archive --format=tar HEAD | tar -x -C /tmp/irtc-src
+> R CMD build /tmp/irtc-src
+> ```
 
-- `New submission`（首次提交必然出现，**无需处理**）。
+**期望结果**：仅 `1 NOTE`（`New submission` + DESCRIPTION 拼写误报，见第 8 节）。
 
-> 任何 `ERROR` / `WARNING` 都必须清零才能提交。本包已无 ERROR/WARNING。
+> 任何 `ERROR` / `WARNING` 都必须清零才能提交。
 
 也可用 devtools（等价、更友好）：
 
 ```r
-devtools::check(".../IRTC", args = "--as-cran")
+devtools::check(".", args = "--as-cran")
 ```
 
 ---
 
-## 4. 多平台 / 反向依赖检查（CRAN 强烈建议）
+## 4. 多平台检查（win-builder R-devel 为必做项）
 
-CRAN 在多个系统上编译你的包，本机过了不代表别的平台过。用 R-hub v2（基于 GitHub Actions）或 win-builder：
+CRAN 在多个系统上编译你的包，本机过了不代表别的平台过。
+
+> **这不是可选项。** 1.1.0 被退回的两个 ERROR **只在 r-devel 上复现**：测试把
+> `"R version"` 写死进断言，而 r-devel 的 `R.version.string` 开头是
+> `"R Under development (unstable)"`。本地开发机和仓库的 GitHub Actions 跑的都是
+> R release，结构上就测不到这类失败。**提交前必须跑一次 win-builder R-devel。**
+> 详见 [实战记录](cran-submission-1.1.1-zh.md)。
+
+用 R-hub v2（基于 GitHub Actions）或 win-builder：
 
 ```r
 # 4.1 win-builder（最常用，免费，查 Windows 上的 R-devel 和 R-release）
-devtools::check_win_devel(".../IRTC")     # 结果邮件发到 maintainer 邮箱
-devtools::check_win_release(".../IRTC")
+devtools::check_win_devel(".")     # 结果邮件发到 maintainer 邮箱
+devtools::check_win_release(".")
 
 # 4.2 R-hub v2（多平台；需要包在 GitHub 仓库里）
 rhub::rhub_setup()      # 一次性：在你的 GitHub 仓库配置 workflow
 rhub::rhub_check()      # 选 linux / macos / windows 等平台
 
 # 4.3 拼写检查
-spelling::spell_check_package(".../IRTC")   # 专有名词加入 inst/WORDLIST
+spelling::spell_check_package(".")   # 专有名词加入 inst/WORDLIST
 ```
 
 至少跑 **win-builder 的 R-devel**，这是 CRAN 最常用的门槛。
@@ -114,7 +133,7 @@ spelling::spell_check_package(".../IRTC")   # 专有名词加入 inst/WORDLIST
 
 ## 5. 写 `cran-comments.md`
 
-在 `IRTC/` 目录放一个 `cran-comments.md`，告诉 CRAN 你测了什么、如何解释 NOTE、以及差异化说明。模板：
+在仓库根目录放一个 `cran-comments.md`（本仓库已有），告诉 CRAN 你测了什么、如何解释 NOTE、以及差异化说明。模板：
 
 ```markdown
 ## R CMD check results
@@ -155,19 +174,19 @@ There are currently no downstream dependencies (new package).
 
 ### 方式一（推荐）：devtools 自动提交
 ```r
-devtools::release(".../IRTC")
+devtools::release(".")
 # 会：再跑一次 check -> 显示一系列确认问题 -> 自动上传到 CRAN 提交表单 ->
 #     触发确认邮件。按提示逐项确认 yes。
 ```
 或更底层：
 ```r
-devtools::submit_cran(".../IRTC")
+devtools::submit_cran(".")
 ```
 
 ### 方式二：网页表单（手动）
 1. 打开 <https://cran.r-project.org/submit.html>
 2. 填写包名、版本、维护者姓名与邮箱
-3. 上传 `IRTC_1.1.0.tar.gz`
+3. 上传 `IRTC_<版本>.tar.gz`
 4. 提交后，CRAN 立即给维护者邮箱发一封**确认链接**邮件——**必须点击确认**，否则提交作废。
 
 ---
@@ -184,14 +203,18 @@ devtools::submit_cran(".../IRTC")
    - 可能要求进一步说明包的非平凡功能、许可证或依赖边界。
 4. **结果**：
    - **通过** → 几天内出现在 CRAN，自动多平台构建二进制包。
-   - **要求修改** → 按邮件意见改，**提升版本号**（如 1.0.0 → 1.0.1），重跑检查，重新提交，并在 `cran-comments.md` 里写 “Resubmission” 及本次改了什么。
+   - **要求修改** → 按邮件意见改，**提升版本号**（如 1.1.0 → 1.1.1；1.1.0 被退回后即照此处理），重跑检查，重新提交，并在 `cran-comments.md` 里写 “Resubmission” 及本次改了什么。
 
 ---
 
 ## 8. 常见被拒原因清单（提前自查）
 
+> 标 ⚠️ 的两条是 IRTC 1.1.0 **实际被退回的原因**，见 [实战记录](cran-submission-1.1.1-zh.md)。
+
 | 原因 | 自查/修复 |
 |---|---|
+| ⚠️ Rd 里有非 ASCII（尤其 CJK）字符 | PDF 手册必炸（`Unicode character ... not set up for use with LaTeX`）。`Encoding: UTF-8` **不解决**此问题。`\usage` 用 `\uxxxx` 转义；正文用 `man/macros/irtc.Rd` 的 `\zh` 宏。自查：`LC_ALL=C grep -rn '[^ -~]' man/` |
+| ⚠️ 测试把 R 自身的输出措辞写死 | 版本串/错误消息随 R 版本变化，r-devel 上会挂。与 `R.version.string` 等变量比对，勿用字面量。必须跑 win-builder R-devel 才能发现 |
 | `Description` 以包名或 “This package” 开头 | 已避免（以 “Self-contained …” 开头） |
 | 软件/包名未加单引号 | 按 CRAN 规范检查 `Description` 中的软件包名 |
 | 方法无文献引用 | 可在 `Description` 末尾加 `Adams, Wilson & Wang (1997) <doi:...>`（见附录 B） |
@@ -214,7 +237,7 @@ devtools::submit_cran(".../IRTC")
 ## 附录 A：若需改包名
 
 1. 改 `DESCRIPTION` 的 `Package:` 字段。
-2. 把 `IRTC/` 目录与 `IRTC-package.Rd`、`R/IRTC-package.R`（若有）、NAMESPACE 里相关引用同步改名。
+2. 把 `IRTC-package.Rd`、`R/IRTC-package.R`（若有）、NAMESPACE 里相关引用同步改名。
 3. C++ 里 `// [[Rcpp::export]]` 的函数名不必改（与包名无关），但 `RcppExports` 重新生成：`Rcpp::compileAttributes()`。
 4. 重新 `R CMD build` + `--as-cran`。
 5. 用 `available::available("新名")` 确认可用。
@@ -233,11 +256,11 @@ Methodology follows Adams, Wilson and Wang (1997) <doi:10.1177/0146621697211001>
 
 ```bash
 # 构建 + 检查
-R CMD build IRTC
-R CMD check IRTC_1.1.0.tar.gz --as-cran
+R CMD build .
+R CMD check IRTC_<版本>.tar.gz --as-cran
 
 # devtools 一条龙
-Rscript -e 'devtools::check("IRTC", args="--as-cran")'
-Rscript -e 'devtools::check_win_devel("IRTC")'
-Rscript -e 'devtools::release("IRTC")'
+Rscript -e 'devtools::check(".", args="--as-cran")'
+Rscript -e 'devtools::check_win_devel(".")'
+Rscript -e 'devtools::release(".")'
 ```

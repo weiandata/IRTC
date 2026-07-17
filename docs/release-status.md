@@ -1,6 +1,56 @@
 # IRTC Release Status
 
-## 1.1.0 (verified 2026-07-17, ready for CRAN submission)
+## 1.1.1 (verified 2026-07-17, submitted to CRAN)
+
+Packaging-only release. It exists because CRAN's incoming pre-tests
+rejected 1.1.0 with 2 ERRORs and 1 WARNING. No package code changed: the
+failures came from documentation sources and two over-specified test
+assertions. Full account, including root causes and the reasoning behind
+each fix: `docs/cran-submission-1.1.1-zh.md`.
+
+What changed relative to 1.1.0:
+
+- Rd sources reaching LaTeX are now ASCII, so the PDF reference manual
+  builds without errors. Chinese column-name aliases are preserved: the
+  new `\zh` macro (`man/macros/irtc.Rd`) renders the characters in HTML
+  and text help and an equivalent `\uxxxx` escape in the PDF.
+- `test-print-session.R` no longer assumes the released R wording
+  `"R version"`, which does not hold on r-devel
+  (`"R Under development (unstable)"`) and failed both r-devel flavors.
+- DESCRIPTION gains the `Date` field that was missing, so the banner
+  reads `IRTC 1.1.1 (2026-07-17)` rather than `IRTC 1.1.1 ()`.
+
+Verification:
+
+- Local (macOS, R 4.6.0 aarch64) `R CMD check --as-cran`: 0 ERROR,
+  0 WARNING, 1 NOTE ("New submission" + DESCRIPTION spelling false
+  positive). Generated PDF contains 0 CJK characters; HTML help retains
+  the Chinese aliases.
+- win-builder R-devel (`R Under development (unstable) (2026-07-16
+  r90264 ucrt)`): Status 1 NOTE; `checking tests` OK [326s];
+  `checking PDF version of manual` OK [20s]. This flavor is the only one
+  that can confirm the test fix, since the failure does not reproduce on
+  released R.
+- Submission tarball: IRTC_1.1.1.tar.gz, built from a clean
+  `git archive HEAD` export.
+
+## 1.1.0 (verified 2026-07-17, rejected by CRAN incoming pre-tests)
+
+Superseded by 1.1.1. The verification below was reported honestly but
+could not have caught either ERROR, for two structural reasons worth
+recording:
+
+- `scripts/verify-release-1.1.R` runs `rcmdcheck` with `--as-cran` **and
+  `--no-manual`** (line 85), which skips building the PDF manual. The
+  LaTeX failure on the CJK characters in the Rd sources was therefore
+  invisible locally. The "0 WARNING" below is real for `--no-manual` and
+  says nothing about the manual.
+- The suite ran on released R only (local macOS R 4.6.0, and CI on R
+  release). The test failure reproduces exclusively on r-devel, whose
+  `R.version.string` wording differs.
+
+Consequence: local green did not imply CRAN green. See the 1.1.1 entry
+above and `docs/cran-submission-1.1.1-zh.md`.
 
 1.1.0 is a usability release for the GPCM / multidimensional workflow on
 top of the verified 1.0.0 core. New behaviour (all in the usability

@@ -10,7 +10,10 @@ it describes.
 - [Repository standard](repository-standard.md) summarizes the governance
   baseline inherited from the WeianData repository template.
 - [CRAN submission guide (中文)](cran-submission-guide-zh.md) documents the
-  end-to-end CRAN submission process for this package.
+  end-to-end CRAN submission process for this package (how it should be done).
+- [CRAN submission record: 1.1.0 rejection and 1.1.1 resubmission (中文)](cran-submission-1.1.1-zh.md)
+  records what actually happened: what CRAN's incoming pre-tests reported, the
+  root cause of each ERROR, and why each fix was chosen.
 - [Release status](release-status.md) records the verified package state.
 - [Technical compliance review](compliance/2026-07-14-technical-compliance-review.md)
   records the repository-level licensing and ownership audit.
