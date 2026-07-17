@@ -1,3 +1,52 @@
+# IRTC 1.1.0
+
+Usability release focused on the GPCM / multidimensional workflow. The
+estimation core (`irtc.mml` / `irtc.mml.2pl`) is unchanged; all new
+behaviour lives in the usability layer and is backward compatible. New
+optional dependencies: none.
+
+## New features
+
+* `irtc_read()` gains sampling-weight import: a `weights=` argument plus
+  automatic detection of common weight column names (English and
+  Chinese). Weights are validated (positive numbers; missing set to 1
+  with a warning), kept aligned when empty rows are dropped, and shown by
+  the print method. `irtc()` forwards them as `pweights`.
+* `irtc_read_q()` and `irtc_align_q()`: read a Q (item-by-dimension)
+  matrix from any supported file format or an R object, with an optional
+  partial-credit / maximum-score declaration column. Dimension column
+  headers become the dimension names used in all person-level output.
+  Alignment against the response data warns on item mismatches and keeps
+  the shared items by default, or stops with `on_mismatch = "error"`.
+* `irtc(q = , on_mismatch = )`: supply a Q matrix to `irtc()` directly;
+  it is aligned and passed to the estimation.
+* `irtc_score()` / `irtc()`: `key` and `rules` now also accept file
+  paths in any supported format. Answer-key files may carry a
+  partial-answer column, giving partial-credit scoring (full = 2,
+  partial = 1, other = 0). Consistency between the Q-matrix
+  partial-credit declaration and the applied scoring is checked.
+* `irtc(rare_categories = )`: robust handling of score categories that
+  nobody reached. `"collapse"` (default) merges unobserved categories
+  and annotates the mapping; `"prior"` keeps the category structure by
+  stabilising the affected thresholds. Items nobody answered keep an
+  annotated row in `irtc_results()` instead of silently disappearing.
+* GPCM item output now labels the partial-correct and full-correct
+  difficulties (`b_partial` / `b_full`, or `b_step1..b_stepK`). Person
+  output uses the Q dimension names for ability / standard-error headers.
+  `irtc_results()` schema advances to 1.1 (additive only).
+* `irtc_report()` gains a Model-diagnostics section (convergence,
+  information criteria, EAP reliability bands, item-fit reading) and a
+  Data-processing-transparency section (weights, Q alignment, category
+  collapses, dropped items, scoring summary, cleaning log).
+
+## Refinements
+
+* `irtc_report()` now creates any missing parent directories of the
+  output file, matching `irtc_excel()`.
+* Automatic sampling-weight detection no longer treats a bare `w` column
+  as weights; it was an undocumented alias that could silently consume a
+  binary item column named `w`. Explicit `weights = "w"` still works.
+
 # IRTC 1.0.0
 
 First CRAN release. The estimation core is unchanged from 0.1.0; this

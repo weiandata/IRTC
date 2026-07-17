@@ -3,8 +3,8 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-SRC="$ROOT/docs/manuals/IRTC手册-中文-V0.1.0.md"
-OUT="$ROOT/docs/manuals/IRTC使用手册_中文_V0.1.0.pdf"
+SRC="$ROOT/docs/manuals/IRTC手册-中文-V1.0.0.md"
+OUT="$ROOT/docs/manuals/IRTC使用手册_中文_V1.0.0.pdf"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 

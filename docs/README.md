@@ -17,7 +17,7 @@ it describes.
 
 ### User manuals (`manuals/`)
 
-- [IRTC Manual (English)](manuals/IRTC-Manual-English.md)
-- [IRTC 使用手册（中文，V0.1.0）](manuals/IRTC手册-中文-V0.1.0.md)
-  (also available as PDF in the same directory)
-- [IRTC 手册（中文，技术路线扩展版）](manuals/IRTC手册-中文-技术路线扩展版.md)
+- [IRTC Manual (English, V1.0.0)](manuals/IRTC-Manual-English.md)
+- [IRTC 使用手册（中文，V1.0.0）](manuals/IRTC手册-中文-V1.0.0.md)
+  (PDF can be regenerated with `scripts/build-manual-pdf.sh`)
+- [V1.0 release plan (中文)](v1.0-release-plan-zh.md)

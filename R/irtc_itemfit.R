@@ -114,6 +114,20 @@ irtc_itemfit <- function(mod, resp=NULL)
     out
 }
 
+## Dimension names for person-level output. Uses the Q-matrix column
+## headers when a Q matrix was supplied to irtc(); otherwise returns NULL
+## so callers keep their default dim1/dim2 labels.
+irtc_dim_names <- function(mod, n_dim)
+{
+    q <- mod$usability$q
+    if (is.null(q) || is.null(q$Q)) return(NULL)
+    nm <- colnames(q$Q)
+    if (is.null(nm) || length(nm) != n_dim) return(NULL)
+    ## make the names safe and unique for use as column-name components
+    nm <- make.unique(make.names(nm))
+    nm
+}
+
 ## Extract the person EAP estimates as an N x D matrix.
 irtc_extract_eap <- function(mod)
 {

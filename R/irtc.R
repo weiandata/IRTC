@@ -10,8 +10,10 @@
 ## Professional users keep full control through '...' which is passed to
 ## irtc.mml() / irtc.mml.2pl() unchanged.
 
-irtc <- function(data, model, key=NULL, rules=NULL, id=NULL, sheet=1,
-    missing_codes=c(-9, -99, 99, 999), check=TRUE, quality=TRUE,
+irtc <- function(data, model, key=NULL, rules=NULL, q=NULL,
+    on_mismatch=c("warn", "error"),
+    rare_categories=c("collapse", "prior"), id=NULL, weights=NULL,
+    sheet=1, missing_codes=c(-9, -99, 99, 999), check=TRUE, quality=TRUE,
     verbose=TRUE, ...)
 {
     ## --- model argument ---------------------------------------------------
@@ -53,13 +55,62 @@ irtc <- function(data, model, key=NULL, rules=NULL, id=NULL, sheet=1,
     if (inherits(data, "irtc_data")) {
         data_obj <- data
     } else {
-        data_obj <- irtc_read(data, sheet=sheet, id=id,
+        data_obj <- irtc_read(data, sheet=sheet, id=id, weights=weights,
             missing_codes=missing_codes, verbose=FALSE)
     }
 
     ## --- score raw responses ------------------------------------------------
     if (!is.null(key) || !is.null(rules)) {
         data_obj <- irtc_score(data_obj, key=key, rules=rules)
+    }
+
+    ## --- Q matrix: read and align against the data ---------------------------
+    qobj <- NULL
+    q_only_items <- character(0)
+    if (!is.null(q)) {
+        on_mismatch <- match.arg(on_mismatch)
+        qobj <- if (inherits(q, "irtc_qmatrix")) q else irtc_read_q(q)
+        aligned <- irtc_align_q(data_obj, qobj, on_mismatch=on_mismatch)
+        data_obj <- aligned$data
+        qobj <- aligned$q
+        q_only_items <- aligned$q_only
+
+        ## consistency between the Q partial-credit declaration and the
+        ## scoring actually applied
+        if (!is.null(data_obj$score_info)) {
+            si <- data_obj$score_info
+            q_items <- rownames(qobj$Q)
+            declared <- names(qobj$partial)[qobj$partial]
+            scored_items <- intersect(si$scored_items, q_items)
+            multi <- intersect(si$partial_items, q_items)
+            w423 <- setdiff(intersect(declared, scored_items), multi)
+            if (length(w423) > 0L) {
+                irtc_warn(code="W423",
+                    en=paste0("Item(s) declared as partial credit in the Q",
+                        " matrix but scored right/wrong only (no partial ",
+                        "answer or rules given): ",
+                        paste(w423, collapse=", "), "."),
+                    zh=paste0("\u4ee5\u4e0b\u9898\u76ee\u5728 Q \u77e9\u9635\u4e2d\u58f0\u660e\u4e3a\u5206\u90e8\u8ba1\u5206\uff0c\u4f46\u8ba1\u5206\u65f6\u672a\u63d0\u4f9b\u90e8\u5206\u6b63\u786e\u7b54\u6848\u6216\u8ba1\u5206\u89c4\u5219\uff0c\u5df2\u6309\u5bf9/\u9519\u8ba1\u5206\uff1a",
+                        paste(w423, collapse="\u3001"), "\u3002"),
+                    fix_en=paste0("Add a partial_answer column to the key ",
+                        "file, or supply 'rules' for these items."),
+                    fix_zh=paste0("\u8bf7\u5728\u7b54\u6848\u952e\u4e2d\u6dfb\u52a0\u90e8\u5206\u6b63\u786e\u7b54\u6848\u5217\uff0c\u6216\u4e3a\u8fd9\u4e9b\u9898\u76ee\u63d0\u4f9b 'rules' \u8ba1\u5206\u89c4\u5219\u3002"),
+                    class="irtc_warning_scoring", data=list(items=w423))
+            }
+            w424 <- setdiff(multi, declared)
+            if (length(w424) > 0L) {
+                irtc_warn(code="W424",
+                    en=paste0("Item(s) scored with partial credit but not ",
+                        "declared as partial credit in the Q matrix: ",
+                        paste(w424, collapse=", "), "."),
+                    zh=paste0("\u4ee5\u4e0b\u9898\u76ee\u6309\u5206\u90e8\u8ba1\u5206\u8ba1\u5206\uff0c\u4f46 Q \u77e9\u9635\u672a\u58f0\u660e\u5176\u4e3a\u5206\u90e8\u8ba1\u5206\uff1a",
+                        paste(w424, collapse="\u3001"), "\u3002"),
+                    fix_en=paste0("Update the partial-credit column of the ",
+                        "Q matrix if the scoring is intended."),
+                    fix_zh=paste0("\u5982\u8ba1\u5206\u65b9\u5f0f\u65e0\u8bef\uff0c\u8bf7\u540c\u6b65\u66f4\u65b0 Q \u77e9\u9635\u7684\u5206\u90e8\u8ba1\u5206\u5217\u3002"),
+                    class="irtc_warning_scoring", data=list(items=w424))
+            }
+        }
     }
 
     ## --- pre-estimation check ----------------------------------------------
@@ -114,11 +165,73 @@ irtc <- function(data, model, key=NULL, rules=NULL, id=NULL, sheet=1,
             class="irtc_error_data_check")
     }
 
+    ## --- rare / unobserved score categories ----------------------------------
+    rare_categories <- match.arg(rare_categories)
+    dots <- list(...)
+    custom_design <- ("A" %in% names(dots)) ||
+        (model %in% c("PCM2", "RSM")) ||
+        (!is.null(dots$constraint) && !identical(dots$constraint, "cases"))
+    rare <- irtc_rare_apply(resp, q=qobj, mode=rare_categories,
+        model=model, custom_design=custom_design)
+    resp <- rare$resp
+    if (nrow(rare$log) > 0L) {
+        data_obj$log <- rbind(data_obj$log, rare$log)
+    }
+
     ## --- estimate ------------------------------------------------------------
     pid <- data_obj$pid
     fit_fun <- if (model %in% c("2PL", "GPCM")) irtc.mml.2pl else irtc.mml
+    fit_args <- c(list(resp=resp, irtmodel=model, pid=pid, verbose=verbose),
+        list(...))
+    if (!is.null(rare$fit_extra)) {
+        fx <- rare$fit_extra
+        if (!is.null(fx$xsi.fixed)) {
+            fit_args$xsi.fixed <- if (is.null(fit_args$xsi.fixed)) {
+                fx$xsi.fixed
+            } else {
+                rbind(fit_args$xsi.fixed, fx$xsi.fixed)
+            }
+        }
+        if (!is.null(fx$prior_list_xsi)) {
+            ctl <- if (is.null(fit_args$control)) list() else
+                fit_args$control
+            if (is.null(ctl$prior_list_xsi)) {
+                ctl$prior_list_xsi <- fx$prior_list_xsi
+                ctl$mstep_intercept_method <- "optim"
+            }
+            fit_args$control <- ctl
+        }
+    }
+    if (!is.null(qobj)) {
+        if ("Q" %in% names(fit_args)) {
+            irtc_warn(code="W419",
+                en=paste0("Both 'q' and an explicit 'Q' argument were ",
+                    "supplied; using 'Q' and ignoring 'q'."),
+                zh=paste0("\u540c\u65f6\u63d0\u4f9b\u4e86 'q' \u548c\u663e\u5f0f\u7684 'Q' \u53c2\u6570\uff1b\u5c06\u4f7f\u7528 'Q'\uff0c\u5ffd\u7565 'q'\u3002"),
+                fix_en="Supply only one of the two.",
+                fix_zh="\u8bf7\u53ea\u63d0\u4f9b\u5176\u4e2d\u4e00\u4e2a\u3002",
+                class="irtc_warning_estimation")
+        } else {
+            ## items dropped just above must leave the Q matrix as well
+            fit_args$Q <- qobj$Q[colnames(resp), , drop=FALSE]
+        }
+    }
+    if (!is.null(data_obj$weights)) {
+        if ("pweights" %in% names(fit_args)) {
+            irtc_warn(code="W418",
+                en=paste0("Both a weights column (from the data) and an ",
+                    "explicit 'pweights' argument were supplied; using ",
+                    "'pweights' and ignoring the weights column."),
+                zh=paste0("\u6570\u636e\u4e2d\u5e26\u6709\u6743\u91cd\u5217\uff0c\u540c\u65f6\u53c8\u663e\u5f0f\u63d0\u4f9b\u4e86 'pweights' \u53c2\u6570\uff1b\u5c06\u4f7f\u7528 'pweights'\uff0c\u5ffd\u7565\u6743\u91cd\u5217\u3002"),
+                fix_en="Supply only one of the two.",
+                fix_zh="\u8bf7\u53ea\u63d0\u4f9b\u5176\u4e2d\u4e00\u79cd\u6743\u91cd\u3002",
+                class="irtc_warning_estimation")
+        } else {
+            fit_args$pweights <- data_obj$weights
+        }
+    }
     mod <- tryCatch(
-        fit_fun(resp=resp, irtmodel=model, pid=pid, verbose=verbose, ...),
+        do.call(fit_fun, fit_args),
         error=function(e) {
             if (inherits(e, "irtc_error")) stop(e)
             irtc_stop(code="E408",
@@ -138,7 +251,12 @@ irtc <- function(data, model, key=NULL, rules=NULL, id=NULL, sheet=1,
 
     ## --- enrich with usability results ---------------------------------------
     usability <- list(model=model, data_log=data_obj$log,
-        check=check_obj, removed_items=bad_items)
+        check=check_obj, removed_items=bad_items, q=qobj,
+        q_only_items=q_only_items,
+        score_info=data_obj$score_info,
+        weights=data_obj$weights,
+        rare_categories=rare$info,
+        rare_mode=rare_categories)
     if (quality) {
         usability$ctt <- tryCatch(irtc_ctt(resp), error=function(e) NULL)
         usability$itemfit <- tryCatch(irtc_itemfit(mod, resp=resp),

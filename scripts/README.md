@@ -1,7 +1,7 @@
 # Scripts
 
 - `build-manual-pdf.sh` rebuilds the Chinese user-manual PDF from
-  `docs/manuals/IRTC手册-中文-V0.1.0.md` using Pandoc and XeLaTeX.
+  `docs/manuals/IRTC手册-中文-V1.0.0.md` using Pandoc and XeLaTeX.
 
 Use this directory only for small utility scripts that support repository tasks
 such as setup, validation, documentation, release preparation, or maintenance.

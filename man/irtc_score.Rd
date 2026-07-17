@@ -2,6 +2,7 @@
 % SPDX-License-Identifier: GPL-2.0-or-later
 \name{irtc_score}
 \alias{irtc_score}
+\encoding{UTF-8}
 \title{Score Raw Responses with an Answer Key or Scoring Rules}
 \description{
 Converts raw multiple-choice responses (e.g. \code{"A"}, \code{"B"},
@@ -9,22 +10,36 @@ Converts raw multiple-choice responses (e.g. \code{"A"}, \code{"B"},
 responses to partial-credit scores through a rules table. Responses are
 normalised before matching: whitespace is trimmed, case is ignored and
 full-width characters are converted to half-width.
+
+Both \code{key} and \code{rules} may also be file paths in any format
+supported by \code{\link{irtc_read}}. A key file needs an item column
+(\code{item}, 题目, ...) and an answer column (\code{answer}, 答案,
+...); an optional partial-answer column (\code{partial_answer},
+部分正确答案, ...) lists answers worth partial credit, several
+separated by \code{|}, \code{;}, \code{,} or 、. Items with partial
+answers are scored full = 2, partial = 1, other = 0; items without stay
+0/1. For more than three score levels supply an explicit \code{rules}
+table instead.
 }
 \usage{
-irtc_score(resp, key = NULL, rules = NULL, na_as_wrong = FALSE)
+irtc_score(resp, key = NULL, rules = NULL, na_as_wrong = FALSE,
+    sheet = 1)
 }
 \arguments{
 \item{resp}{An \code{irtc_data} object (from \code{\link{irtc_read}}), a
     data frame or a matrix of raw responses.}
 \item{key}{A named vector mapping item names to correct answers, e.g.
-    \code{c(Q1 = "A", Q2 = "C")}. An unnamed vector is matched to the item
+    \code{c(Q1 = "A", Q2 = "C")}, or a path to a key file (see
+    Description). An unnamed vector is matched to the item
     columns by position. Items not named in the key are left unchanged.}
 \item{rules}{A data frame with columns \code{item}, \code{response},
-    \code{score} defining partial-credit scoring. Observed responses
-    without a rule are set to \code{NA} with a warning of class
+    \code{score} defining partial-credit scoring, or a path to such a
+    table (Chinese column aliases 题目/作答/分值 are accepted). Observed
+    responses without a rule are set to \code{NA} with a warning of class
     \code{irtc_warning_scoring}.}
 \item{na_as_wrong}{Logical: score missing responses as 0 instead of
     \code{NA}? (Key scoring only.)}
+\item{sheet}{Excel sheet of the key / rules file (number or name).}
 }
 \value{
 The same type as the input: an \code{irtc_data} object with scored

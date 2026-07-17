@@ -309,6 +309,62 @@ irtc_param_table <- function(mod, resp=NULL)
         colnames(tau) <- paste0("tau_", seq_len(ncol(tau)))
         out <- cbind(out, tau)
     }
+
+    ## --- semantic step difficulties for polytomous (GPCM/PCM) items ------
+    ## The boundary between adjacent categories k-1 and k sits at
+    ## theta = (AXsi_k - AXsi_{k-1}) / a. For a 3-category item this gives
+    ## the partial-correct difficulty (step 1) and the full-correct
+    ## difficulty (step 2); more categories are labelled b_step1..b_stepK.
+    if (maxK > 2L) {
+        steps <- matrix(NA_real_, n_items, maxK - 1L)
+        for (j in seq_len(n_items)) {
+            a_j <- alpha[j]
+            if (is.na(a_j) || a_j == 0) next
+            axsi_j <- AXsi[j, ]
+            k_max <- sum(!is.na(axsi_j)) - 1L
+            if (k_max < 1L) next
+            for (k in seq_len(k_max)) {
+                steps[j, k] <- (axsi_j[k + 1L] - axsi_j[k]) / a_j
+            }
+        }
+        steps <- round(steps, 4)
+        max_steps <- ncol(steps)
+        if (max_steps == 2L) {
+            step_names <- c("b_partial", "b_full")
+        } else {
+            step_names <- paste0("b_step", seq_len(max_steps))
+            step_names[max_steps] <- paste0("b_step", max_steps)
+        }
+        colnames(steps) <- step_names
+        out <- cbind(out, steps)
+        ## legend describing which column is the full-correct difficulty
+        attr(out, "step_legend") <- if (max_steps == 2L) {
+            list(b_partial="first partial-correct difficulty",
+                b_full="full-correct (highest) difficulty")
+        } else {
+            stats::setNames(
+                c(paste0("partial-correct difficulty ", seq_len(max_steps - 1L)),
+                  "full-correct (highest) difficulty"),
+                step_names)
+        }
+    }
+
+    ## --- rare / unobserved category annotations --------------------------
+    info <- mod$usability$rare_categories
+    if (!is.null(info)) {
+        idx <- match(out$item_id, info$item)
+        out$max_score_declared <- info$max_declared[idx]
+        out$max_score_observed <- info$max_observed[idx]
+        out$categories_unobserved <- info$unobserved[idx]
+        cm <- if (!is.null(info$collapse_map)) info$collapse_map[idx] else
+            rep("", nrow(out))
+        cm[is.na(cm)] <- ""
+        out$categories_collapsed <- cm
+        pd <- if (!is.null(info$prior_dominated))
+            info$prior_dominated[idx] else rep(FALSE, nrow(out))
+        pd[is.na(pd)] <- FALSE
+        out$prior_dominated <- pd
+    }
     out
 }
 
@@ -320,7 +376,8 @@ irtc_excel_parameters <- function(mod, path, lang, resp)
 
     notes <- data.frame(
         x=c("schema_version", "analysis_id", "model", "item_id", "n_obs",
-            "p_value", "slope_a", "difficulty_b", "se_b", "tau_k"),
+            "p_value", "slope_a", "difficulty_b", "se_b", "tau_k",
+            "b_partial", "b_full", "categories_collapsed"),
         y=c(
             irtc_tr(paste0("Fixed layout version (",
                     irtc_excel_schema_version, "). Columns never change",
@@ -352,7 +409,21 @@ irtc_excel_parameters <- function(mod, path, lang, resp)
                     " as fixed)."),
                 "b \u7684\u8fd1\u4f3c\u6807\u51c6\u8bef\uff08\u5c06\u533a\u5206\u5ea6\u89c6\u4e3a\u56fa\u5b9a\uff09\u3002", lang),
             irtc_tr("Step thresholds for polytomous items (centred).",
-                "\u591a\u7ea7\u8ba1\u5206\u9898\u7684\u6b65\u9aa4\u9608\u503c\uff08\u4e2d\u5fc3\u5316\uff09\u3002", lang)
+                "\u591a\u7ea7\u8ba1\u5206\u9898\u7684\u6b65\u9aa4\u9608\u503c\uff08\u4e2d\u5fc3\u5316\uff09\u3002", lang),
+            irtc_tr(paste0("Partial-correct difficulty: ability at which a",
+                    " partial and a zero score are equally likely",
+                    " (b_step1..b_step(K-1) when there are more levels)."),
+                paste0("\u90e8\u5206\u6b63\u786e\u96be\u5ea6\uff1a\u5f97\u90e8\u5206\u5206\u4e0e\u5f97 0 \u5206\u6982\u7387\u76f8\u7b49",
+                    "\u65f6\u7684\u80fd\u529b\u503c\uff08\u7c7b\u522b\u66f4\u591a\u65f6\u4e3a b_step1..b_step(K-1)\uff09\u3002"),
+                lang),
+            irtc_tr(paste0("Full-correct difficulty: ability at which the",
+                    " top score becomes the most likely outcome."),
+                paste0("\u5b8c\u5168\u6b63\u786e\u96be\u5ea6\uff1a\u6700\u9ad8\u5206\u6210\u4e3a\u6700\u53ef\u80fd",
+                    "\u7ed3\u679c\u65f6\u7684\u80fd\u529b\u503c\u3002"), lang),
+            irtc_tr(paste0("Recode map when unobserved score categories",
+                    " were collapsed (empty means no collapse)."),
+                paste0("\u5b58\u5728\u65e0\u4eba\u5f97\u5230\u7684\u5206\u6570\u7c7b\u522b\u65f6\u7684\u6298\u53e0\u91cd",
+                    "\u7f16\u7801\u6620\u5c04\uff08\u4e3a\u7a7a\u8868\u793a\u672a\u6298\u53e0\uff09\u3002"), lang)
         ), stringsAsFactors=FALSE
     )
     colnames(notes) <- c(irtc_tr("Column", "\u680f\u76ee", lang),
@@ -385,9 +456,16 @@ irtc_person_table <- function(mod, lang=irtc_lang())
     if (!is.null(person$max)) {
         out[[irtc_tr("max_score", "\u6ee1\u5206", lang)]] <- person$max
     }
+    dim_names <- irtc_dim_names(mod, n_dim)
     sd_cols <- grep("^SD\\.EAP", colnames(person), value=TRUE)
     for (d in seq_len(n_dim)) {
-        dim_suffix <- if (n_dim > 1L) paste0("_dim", d) else ""
+        dim_suffix <- if (!is.null(dim_names)) {
+            paste0("_", dim_names[d])
+        } else if (n_dim > 1L) {
+            paste0("_dim", d)
+        } else {
+            ""
+        }
         v <- eap[, d]
         out[[paste0(irtc_tr("ability_EAP", "\u80fd\u529b\u503cEAP", lang),
             dim_suffix)]] <- round(v, 4)

@@ -10,9 +10,10 @@
 ## and in-memory objects (data.frame, matrix, tibble). Every cleaning
 ## action is recorded in a bilingual log attached to the returned object.
 
-irtc_read <- function(x, sheet=1, id=NULL, missing_codes=c(-9, -99, 99, 999),
+irtc_read <- function(x, sheet=1, id=NULL, weights=NULL,
+    missing_codes=c(-9, -99, 99, 999),
     na_strings=c("", "NA", "N/A", "n/a", ".", "*", "\u7f3a\u5931", "\u65e0", "\u7a7a"),
-    guess_id=TRUE, clean=TRUE, recode=TRUE, verbose=TRUE)
+    guess_id=TRUE, guess_weights=TRUE, clean=TRUE, recode=TRUE, verbose=TRUE)
 {
     log <- irtc_log_new()
 
@@ -86,19 +87,29 @@ irtc_read <- function(x, sheet=1, id=NULL, missing_codes=c(-9, -99, 99, 999),
     dropped <- id_result$dropped
     log <- id_result$log
 
+    ## --- 2b. Split off sampling weights ----------------------------------
+    w_result <- irtc_split_weights(raw, weights=weights,
+        guess_weights=guess_weights, na_strings=na_strings, log=log)
+    raw <- w_result$resp
+    wgt <- w_result$weights
+    log <- w_result$log
+
     ## --- 3. Cleaning -----------------------------------------------------
     if (clean) {
         cl <- irtc_clean_resp(raw, missing_codes=missing_codes,
             na_strings=na_strings, recode=recode, log=log)
         raw <- cl$resp
         log <- cl$log
-        ## keep the person ID aligned when empty rows were dropped
+        ## keep the person ID and weights aligned when empty rows dropped
         if (!is.null(pid) && !is.null(cl$rows_kept)) {
             pid <- pid[cl$rows_kept]
         }
+        if (!is.null(wgt) && !is.null(cl$rows_kept)) {
+            wgt <- wgt[cl$rows_kept]
+        }
     }
 
-    out <- list(resp=raw, pid=pid, dropped=dropped, log=log,
+    out <- list(resp=raw, pid=pid, weights=wgt, dropped=dropped, log=log,
         source=source_label, clean=clean)
     class(out) <- "irtc_data"
     if (verbose) {
@@ -290,6 +301,115 @@ irtc_split_id <- function(resp, id=NULL, guess_id=TRUE, log)
 }
 
 ## --------------------------------------------------------------------------
+## Sampling weight handling
+## --------------------------------------------------------------------------
+
+irtc_weight_name_pool <- function()
+{
+    c("weight", "weights", "wt", "wgt", "pweight", "pweights",
+      "sampling_weight", "samplingweight", "case_weight", "caseweight",
+      "\u6743\u91cd", "\u6837\u672c\u6743\u91cd", "\u52a0\u6743",
+      "\u6743\u6570", "\u62bd\u6837\u6743\u91cd", "\u52a0\u6743\u7cfb\u6570",
+      "\u6743\u91cd\u7cfb\u6570")
+}
+
+irtc_split_weights <- function(resp, weights=NULL, guess_weights=TRUE,
+    na_strings=character(0), log)
+{
+    sel <- NULL
+    explicit <- !is.null(weights)
+    if (explicit) {
+        if (is.numeric(weights)) {
+            weights <- colnames(resp)[as.integer(weights[1L])]
+        }
+        weights <- as.character(weights)[1L]
+        if (is.na(weights) || !(weights %in% colnames(resp))) {
+            irtc_stop(code="E109",
+                en=paste0("Weights column not found: '", weights, "'."),
+                zh=paste0("\u627e\u4e0d\u5230\u6307\u5b9a\u7684\u6743\u91cd\u5217\uff1a'",
+                    weights, "'\u3002"),
+                fix_en="Check colnames() of your data for the exact name.",
+                fix_zh="\u8bf7\u7528 colnames() \u67e5\u770b\u6570\u636e\u7684\u5b9e\u9645\u5217\u540d\u3002",
+                class="irtc_error_data_format", data=list(weights=weights))
+        }
+        sel <- weights
+    } else if (guess_weights) {
+        hits <- which(tolower(trimws(colnames(resp))) %in%
+            irtc_weight_name_pool())
+        if (length(hits) > 0L) {
+            sel <- colnames(resp)[hits[1L]]
+        }
+    }
+    if (is.null(sel)) {
+        return(list(resp=resp, weights=NULL, log=log))
+    }
+    wraw <- resp[[sel]]
+    if (is.character(wraw)) {
+        wraw <- trimws(wraw)
+        wraw[wraw %in% na_strings] <- NA_character_
+    }
+    wnum <- suppressWarnings(as.numeric(wraw))
+    not_convertible <- !is.na(wraw) & is.na(wnum)
+    if (any(not_convertible)) {
+        irtc_stop(code="E107",
+            en=paste0("Weights column '", sel, "' contains ",
+                sum(not_convertible), " non-numeric value(s), e.g. '",
+                wraw[not_convertible][1L], "'."),
+            zh=paste0("\u6743\u91cd\u5217 '", sel, "' \u5305\u542b ",
+                sum(not_convertible),
+                " \u4e2a\u65e0\u6cd5\u8f6c\u4e3a\u6570\u503c\u7684\u53d6\u503c\uff0c\u4f8b\u5982 '",
+                wraw[not_convertible][1L], "'\u3002"),
+            fix_en="Weights must all be positive numbers.",
+            fix_zh="\u6743\u91cd\u5fc5\u987b\u5168\u90e8\u4e3a\u6b63\u6570\u3002",
+            class="irtc_error_data_format",
+            data=list(column=sel, n_bad=sum(not_convertible)))
+    }
+    if (any(!is.na(wnum) & wnum <= 0)) {
+        n_bad <- sum(!is.na(wnum) & wnum <= 0)
+        irtc_stop(code="E108",
+            en=paste0("Weights column '", sel, "' contains ", n_bad,
+                " zero or negative value(s); weights must be positive."),
+            zh=paste0("\u6743\u91cd\u5217 '", sel, "' \u5305\u542b ", n_bad,
+                " \u4e2a\u96f6\u6216\u8d1f\u503c\uff1b\u6743\u91cd\u5fc5\u987b\u4e3a\u6b63\u6570\u3002"),
+            fix_en="Check the weight construction; remove or fix the rows.",
+            fix_zh=paste0("\u8bf7\u68c0\u67e5\u6743\u91cd\u7684\u8ba1\u7b97\u8fc7\u7a0b\uff0c",
+                "\u4fee\u6b63\u6216\u5254\u9664\u8fd9\u4e9b\u884c\u3002"),
+            class="irtc_error_data_format",
+            data=list(column=sel, n_bad=n_bad))
+    }
+    if (anyNA(wnum)) {
+        n_na <- sum(is.na(wnum))
+        wnum[is.na(wnum)] <- 1
+        irtc_warn(code="W117",
+            en=paste0("Weights column '", sel, "' contains ", n_na,
+                " missing value(s); they were set to 1."),
+            zh=paste0("\u6743\u91cd\u5217 '", sel, "' \u5305\u542b ", n_na,
+                " \u4e2a\u7f3a\u5931\u503c\uff0c\u5df2\u7f6e\u4e3a 1\u3002"),
+            fix_en=paste0("If this is not intended, fill in the weights ",
+                "before reading."),
+            fix_zh=paste0("\u5982\u4e0d\u7b26\u5408\u9884\u671f\uff0c\u8bf7\u5148\u8865\u5168",
+                "\u6743\u91cd\u518d\u8bfb\u5165\u3002"),
+            class="irtc_warning_read", data=list(column=sel, n_na=n_na))
+        log <- irtc_log_add(log, "weights", "W117",
+            en=paste0("Set ", n_na, " missing weight(s) in '", sel,
+                "' to 1."),
+            zh=paste0("\u5c06\u6743\u91cd\u5217 '", sel, "' \u4e2d\u7684 ", n_na,
+                " \u4e2a\u7f3a\u5931\u503c\u7f6e\u4e3a 1\u3002"))
+    }
+    code <- if (explicit) "I116" else "I115"
+    log <- irtc_log_add(log, "weights", code,
+        en=paste0(if (explicit) "Used" else "Detected", " column '", sel,
+            "' as sampling weights (weighted N = ",
+            round(sum(wnum), 2), ")."),
+        zh=paste0(if (explicit) "\u4f7f\u7528" else "\u81ea\u52a8\u8bc6\u522b",
+            "\u5217 '", sel, "' \u4f5c\u4e3a\u6837\u672c\u6743\u91cd",
+            "\uff08\u52a0\u6743\u6837\u672c\u91cf = ", round(sum(wnum), 2),
+            "\uff09\u3002"))
+    resp <- resp[, setdiff(colnames(resp), sel), drop=FALSE]
+    list(resp=resp, weights=wnum, log=log)
+}
+
+## --------------------------------------------------------------------------
 ## Cleaning engine
 ## --------------------------------------------------------------------------
 
@@ -443,6 +563,13 @@ print.irtc_data <- function(x, lang=irtc_lang(), ...)
     cat("  ", irtc_tr("Person ID", "\u4e2a\u6848 ID", lang), ": ",
         if (is.null(x$pid)) irtc_tr("none", "\u65e0", lang)
         else irtc_tr("yes", "\u6709", lang), "\n", sep="")
+    if (!is.null(x$weights)) {
+        cat("  ", irtc_tr("Weights", "\u6743\u91cd", lang), ": ",
+            irtc_tr("yes (weighted N = ",
+                "\u6709\uff08\u52a0\u6743\u6837\u672c\u91cf = ", lang),
+            round(sum(x$weights), 2),
+            irtc_tr(")", "\uff09", lang), "\n", sep="")
+    }
     if (nrow(x$log) > 0L) {
         cat(irtc_tr("Cleaning log:", "\u6e05\u6d17\u65e5\u5fd7\uff1a", lang), "\n", sep="")
         msgs <- if (identical(lang, "zh")) x$log$message_zh else

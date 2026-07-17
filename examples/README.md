@@ -8,7 +8,10 @@ contain no client data or secrets.
 
 - [`basic-usage.R`](basic-usage.R) — fit a Rasch model, a partial credit
   model and a 2PL model on bundled data, inspect item parameters, extract EAP
-  ability estimates and compare nested models.
+  ability estimates and compare nested models; then (V1.0 usability layer)
+  the one-stop `irtc()` workflow, plain-language summaries, data checks,
+  answer-key scoring, item quality ratings, Excel/report exports,
+  machine-readable results and diagnostic plots.
 
 Run from the repository root after installing the package:
 

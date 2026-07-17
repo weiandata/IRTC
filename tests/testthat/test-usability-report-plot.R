@@ -97,3 +97,14 @@ test_that("irtc_report validates format and overwrite", {
     cond3 <- tryCatch(irtc_report(42, "x.html"), condition=function(c) c)
     expect_equal(cond3$code, "E401")
 })
+
+test_that("irtc_report creates missing output directories", {
+    resp <- irtc_test_sim_report()
+    mod <- irtc(resp, model="1PL", verbose=FALSE)
+    nested <- file.path(tempfile(), "deep", "report.html")
+    expect_false(dir.exists(dirname(nested)))
+    suppressMessages(irtc_report(mod, nested, audience="stat",
+        lang="en", verbose=FALSE))
+    expect_true(file.exists(nested))
+    unlink(dirname(dirname(nested)), recursive=TRUE)
+})

@@ -50,6 +50,10 @@ irtc_report <- function(mod, file, format=NULL,
             purpose_en="write Word reports",
             purpose_zh="\u751f\u6210 Word \u62a5\u544a")
     }
+    out_dir <- dirname(file)
+    if (!dir.exists(out_dir)) {
+        dir.create(out_dir, recursive=TRUE)
+    }
     if (is.null(resp)) resp <- mod$resp
     if (is.null(title)) {
         title <- irtc_tr("IRT Analysis Report", "IRT \u5206\u6790\u62a5\u544a", lang)
@@ -150,6 +154,219 @@ irtc_decision_texts <- function(mod, quality, lang)
     out
 }
 
+## Model-diagnostics section (convergence, information criteria, EAP
+## reliability bands, item fit). 'detail' is TRUE for the stat audience
+## (full numeric tables) and FALSE for the condensed survey/decision
+## versions. Returns a list of block specs list(type, value, caption).
+irtc_report_diagnostics_blocks <- function(mod, resp, lang, detail=TRUE)
+{
+    b <- list()
+    push <- function(type, value, caption=NULL) {
+        b[[length(b) + 1L]] <<- list(type=type, value=value,
+            caption=caption)
+    }
+    push("h2", irtc_tr("Model diagnostics", "\u6a21\u578b\u8bca\u65ad", lang))
+
+    ## convergence
+    maxiter <- tryCatch(mod$control$maxiter, error=function(e) NULL)
+    converged <- is.null(maxiter) || is.na(maxiter) || mod$iter < maxiter
+    dh <- mod$deviance.history
+    dev_change <- NA_real_
+    if (!is.null(dh) && is.matrix(dh) && nrow(dh) >= 2L) {
+        tail2 <- dh[(nrow(dh) - 1L):nrow(dh), "deviance"]
+        dev_change <- abs(diff(tail2))
+    }
+    if (converged) {
+        push("p", irtc_tr(
+            paste0("The estimation converged after ", mod$iter,
+                " iteration(s)",
+                if (is.finite(dev_change)) paste0(
+                    " (final deviance change ", round(dev_change, 5), ")")
+                else "", "."),
+            paste0("\u4f30\u8ba1\u5728\u7b2c ", mod$iter,
+                " \u6b21\u8fed\u4ee3\u540e\u6536\u655b",
+                if (is.finite(dev_change)) paste0(
+                    "\uff08\u6700\u7ec8\u504f\u5dee\u53d8\u5316 ",
+                    round(dev_change, 5), "\uff09") else "", "\u3002"),
+            lang))
+    } else {
+        push("p", irtc_tr(
+            paste0("WARNING: the estimation reached the iteration limit (",
+                maxiter, ") without meeting the convergence criterion. ",
+                "Interpret the parameters with caution and consider ",
+                "increasing control=list(maxiter=...)."),
+            paste0("\u8b66\u544a\uff1a\u4f30\u8ba1\u5df2\u8fbe\u5230\u8fed\u4ee3\u4e0a\u9650\uff08",
+                maxiter, "\uff09\u4ecd\u672a\u6ee1\u8db3\u6536\u655b\u51c6\u5219\u3002",
+                "\u8bf7\u8c28\u614e\u89e3\u91ca\u53c2\u6570\uff0c\u5e76\u8003\u8651\u589e\u5927 ",
+                "control=list(maxiter=...)\u3002"), lang))
+    }
+
+    ## information criteria
+    ic <- mod$ic
+    ic_tbl <- data.frame(
+        a=c("Deviance", "N parameters", "AIC", "BIC"),
+        b=c(round(mod$deviance, 2), ic$Npars, round(ic$AIC, 2),
+            round(ic$BIC, 2)),
+        stringsAsFactors=FALSE)
+    colnames(ic_tbl) <- c(irtc_tr("Statistic", "\u7edf\u8ba1\u91cf", lang),
+        irtc_tr("Value", "\u53d6\u503c", lang))
+    push("table", ic_tbl,
+        irtc_tr("Information criteria", "\u4fe1\u606f\u51c6\u5219", lang))
+    push("p", irtc_tr(
+        paste0("AIC and BIC balance model fit against the number of ",
+            "parameters; smaller is better. They are only comparable ",
+            "between models fitted to the same responses."),
+        paste0("AIC \u4e0e BIC \u5728\u6a21\u578b\u62df\u5408\u4e0e\u53c2\u6570\u6570\u91cf\u4e4b\u95f4\u6743\u8861\uff0c",
+            "\u8d8a\u5c0f\u8d8a\u597d\uff1b\u4ec5\u5728\u62df\u5408\u540c\u4e00\u4f5c\u7b54\u6570\u636e\u7684",
+            "\u6a21\u578b\u4e4b\u95f4\u53ef\u6bd4\u3002"), lang))
+
+    ## EAP reliability with interpretation band
+    rel <- suppressWarnings(mean(unlist(mod$EAP.rel), na.rm=TRUE))
+    if (is.finite(rel)) {
+        band <- if (rel >= 0.8) irtc_tr("good (>= 0.80)",
+                "\u826f\u597d\uff08>= 0.80\uff09", lang)
+            else if (rel >= 0.7) irtc_tr("acceptable (0.70-0.80)",
+                "\u53ef\u7528\uff080.70-0.80\uff09", lang)
+            else irtc_tr("low (< 0.70)", "\u504f\u4f4e\uff08< 0.70\uff09", lang)
+        push("p", irtc_tr(
+            paste0("EAP reliability: ", round(rel, 3), " - ", band, "."),
+            paste0("EAP \u4fe1\u5ea6\uff1a", round(rel, 3), " - ", band,
+                "\u3002"), lang))
+    }
+
+    ## item fit
+    fit <- mod$usability$itemfit
+    if (is.null(fit) && !is.null(resp)) {
+        fit <- tryCatch(irtc_itemfit(mod, resp=resp), error=function(e) NULL)
+    }
+    if (!is.null(fit)) {
+        push("p", irtc_tr(
+            paste0("Infit/outfit mean squares near 1 indicate good fit; a ",
+                "common acceptable range is 0.7-1.3. Values well above 1 ",
+                "flag noisy items, values well below 1 flag overly ",
+                "predictable items."),
+            paste0("Infit/outfit \u5747\u65b9\u63a5\u8fd1 1 \u8868\u793a\u62df\u5408\u826f\u597d\uff1b",
+                "\u5e38\u7528\u53ef\u63a5\u53d7\u533a\u95f4\u4e3a 0.7-1.3\u3002\u660e\u663e\u5927\u4e8e 1 ",
+                "\u8868\u793a\u9898\u76ee\u566a\u58f0\u5927\uff0c\u660e\u663e\u5c0f\u4e8e 1 \u8868\u793a\u9898\u76ee",
+                "\u8fc7\u4e8e\u53ef\u9884\u6d4b\u3002"), lang))
+        if (detail) {
+            push("table", as.data.frame(fit),
+                irtc_tr("Item fit statistics", "\u9898\u76ee\u62df\u5408\u7edf\u8ba1",
+                    lang))
+        }
+    }
+    b
+}
+
+## Data-transparency section (cleaning log, item alignment, weights,
+## category collapses, dropped items, scoring summary).
+irtc_report_transparency_blocks <- function(mod, lang, detail=TRUE)
+{
+    u <- mod$usability
+    b <- list()
+    push <- function(type, value, caption=NULL) {
+        b[[length(b) + 1L]] <<- list(type=type, value=value,
+            caption=caption)
+    }
+    push("h2", irtc_tr("Data processing transparency",
+        "\u6570\u636e\u5904\u7406\u900f\u660e\u5ea6", lang))
+
+    ## weights
+    w <- u$weights
+    if (!is.null(w) && length(w) > 0L) {
+        cv <- stats::sd(w) / mean(w)
+        push("p", irtc_tr(
+            paste0("Sampling weights were applied (weighted N = ",
+                round(sum(w), 2), "; weight range ", round(min(w), 3),
+                " to ", round(max(w), 3), ", CV ", round(cv, 2), ").",
+                if (cv > 1) " The large weight variability may inflate the effective standard errors." else ""),
+            paste0("\u5206\u6790\u5df2\u52a0\u6743\uff08\u52a0\u6743\u6837\u672c\u91cf = ",
+                round(sum(w), 2), "\uff1b\u6743\u91cd\u8303\u56f4 ",
+                round(min(w), 3), " \u81f3 ", round(max(w), 3),
+                "\uff0c\u53d8\u5f02\u7cfb\u6570 ", round(cv, 2), "\uff09\u3002",
+                if (cv > 1) "\u6743\u91cd\u53d8\u5f02\u8f83\u5927\uff0c\u53ef\u80fd\u62ac\u9ad8\u6709\u6548\u6807\u51c6\u8bef\u3002" else ""),
+            lang))
+    } else {
+        push("p", irtc_tr("No sampling weights were used (equal weighting).",
+            "\u672a\u4f7f\u7528\u6837\u672c\u6743\u91cd\uff08\u7b49\u6743\u91cd\uff09\u3002", lang))
+    }
+
+    ## item alignment against the Q matrix
+    q_only <- u$q_only_items
+    removed <- u$removed_items
+    if (length(q_only) > 0L) {
+        push("p", irtc_tr(
+            paste0("Item(s) declared in the Q matrix but absent from the ",
+                "data (not estimated): ", paste(q_only, collapse=", "), "."),
+            paste0("Q \u77e9\u9635\u4e2d\u58f0\u660e\u4f46\u6570\u636e\u4e2d\u7f3a\u5931\u7684\u9898\u76ee",
+                "\uff08\u672a\u53c2\u4e0e\u4f30\u8ba1\uff09\uff1a",
+                paste(q_only, collapse="\u3001"), "\u3002"), lang))
+    }
+    if (length(removed) > 0L) {
+        push("p", irtc_tr(
+            paste0("Item(s) removed before estimation (no responses or ",
+                "zero variance): ", paste(removed, collapse=", "), "."),
+            paste0("\u4f30\u8ba1\u524d\u5254\u9664\u7684\u9898\u76ee\uff08\u65e0\u4f5c\u7b54\u6216\u96f6",
+                "\u65b9\u5dee\uff09\uff1a", paste(removed, collapse="\u3001"),
+                "\u3002"), lang))
+    }
+
+    ## category collapses
+    info <- u$rare_categories
+    if (!is.null(info)) {
+        rows <- info[info$needs_collapse | info$top_reduced, , drop=FALSE]
+        if (nrow(rows) > 0L) {
+            tbl <- data.frame(
+                a=rows$item,
+                b=rows$max_declared,
+                c=rows$max_observed,
+                d=rows$unobserved,
+                e=if (!is.null(rows$collapse_map)) rows$collapse_map else "",
+                stringsAsFactors=FALSE)
+            colnames(tbl) <- c(
+                irtc_tr("Item", "\u9898\u53f7", lang),
+                irtc_tr("Declared max", "\u58f0\u660e\u6ee1\u5206", lang),
+                irtc_tr("Observed max", "\u89c2\u6d4b\u6700\u9ad8\u5206", lang),
+                irtc_tr("Unobserved", "\u672a\u89c2\u6d4b\u7c7b\u522b", lang),
+                irtc_tr("Collapse map", "\u6298\u53e0\u6620\u5c04", lang))
+            push("table", tbl,
+                irtc_tr("Unobserved score categories",
+                    "\u65e0\u4eba\u5f97\u5230\u7684\u5206\u6570\u7c7b\u522b", lang))
+        }
+    }
+
+    ## scoring summary
+    si <- u$score_info
+    if (!is.null(si)) {
+        n_scored <- length(si$scored_items)
+        n_partial <- length(si$partial_items)
+        push("p", irtc_tr(
+            paste0("Scoring: ", n_scored, " item(s) scored",
+                if (n_partial > 0L) paste0(", of which ", n_partial,
+                    " with partial credit (", paste(si$partial_items,
+                    collapse=", "), ")") else "", "."),
+            paste0("\u8ba1\u5206\uff1a\u5171\u5bf9 ", n_scored, " \u9053\u9898\u8ba1\u5206",
+                if (n_partial > 0L) paste0("\uff0c\u5176\u4e2d ", n_partial,
+                    " \u9053\u4e3a\u5206\u90e8\u8ba1\u5206\uff08",
+                    paste(si$partial_items, collapse="\u3001"), "\uff09")
+                else "", "\u3002"), lang))
+    }
+
+    ## full cleaning log
+    log <- u$data_log
+    if (detail && !is.null(log) && nrow(log) > 0L) {
+        msgs <- if (identical(lang, "zh")) log$message_zh else log$message_en
+        tbl <- data.frame(a=log$step, b=log$code, c=msgs,
+            stringsAsFactors=FALSE)
+        colnames(tbl) <- c(irtc_tr("Step", "\u9636\u6bb5", lang),
+            irtc_tr("Code", "\u7f16\u7801", lang),
+            irtc_tr("Message", "\u8bf4\u660e", lang))
+        push("table", tbl,
+            irtc_tr("Full cleaning log", "\u5b8c\u6574\u6e05\u6d17\u65e5\u5fd7", lang))
+    }
+    b
+}
+
 irtc_report_blocks <- function(mod, audience, lang, resp, title)
 {
     sections <- irtc_summary_texts(mod, lang=lang)
@@ -192,6 +409,10 @@ irtc_report_blocks <- function(mod, audience, lang, resp, title)
         if (!is.null(fig)) add("img", fig,
             irtc_tr("Item difficulty vs person ability",
                 "\u9898\u76ee\u96be\u5ea6\u4e0e\u6837\u672c\u80fd\u529b\u5bf9\u7167", lang))
+        for (bl in irtc_report_diagnostics_blocks(mod, resp, lang,
+            detail=FALSE)) add(bl$type, bl$value, bl$caption)
+        for (bl in irtc_report_transparency_blocks(mod, lang,
+            detail=FALSE)) add(bl$type, bl$value, bl$caption)
         return(blocks)
     }
 
@@ -233,36 +454,19 @@ irtc_report_blocks <- function(mod, audience, lang, resp, title)
                     irtc_excel_schema_version, ")"),
                 paste0("IRT \u9898\u76ee\u53c2\u6570\uff08\u94fe\u63a5\u8868\u7ed3\u6784 v",
                     irtc_excel_schema_version, "\uff09"), lang))
-        fit <- mod$usability$itemfit
-        if (is.null(fit) && !is.null(resp)) {
-            fit <- tryCatch(irtc_itemfit(mod, resp=resp),
-                error=function(e) NULL)
-        }
-        if (!is.null(fit)) {
-            add("h2", irtc_tr("Item fit", "\u9898\u76ee\u62df\u5408", lang))
-            add("table", as.data.frame(fit))
-        }
-        add("h2", irtc_tr("Model information", "\u6a21\u578b\u4fe1\u606f", lang))
-        ic <- mod$ic
-        info <- data.frame(
-            a=c("Deviance", "N parameters", "AIC", "BIC",
-                irtc_tr("EAP reliability", "EAP \u4fe1\u5ea6", lang),
-                irtc_tr("Iterations", "\u8fed\u4ee3\u6b21\u6570", lang)),
-            b=c(round(mod$deviance, 2),
-                ic$Npars,
-                round(ic$AIC, 2), round(ic$BIC, 2),
-                paste(round(unlist(mod$EAP.rel), 3), collapse=", "),
-                mod$iter),
-            stringsAsFactors=FALSE)
-        colnames(info) <- c(irtc_tr("Statistic", "\u7edf\u8ba1\u91cf", lang),
-            irtc_tr("Value", "\u53d6\u503c", lang))
-        add("table", info)
         fig <- irtc_report_figure(irtc_plot_icc(mod, lang=lang),
             width=1050, height=900)
         if (!is.null(fig)) add("img", fig,
             irtc_tr("Item characteristic curves (first 12 items)",
                 "\u9898\u76ee\u7279\u5f81\u66f2\u7ebf\uff08\u524d 12 \u9898\uff09", lang))
     }
+
+    ## model diagnostics + data transparency (all non-decision audiences)
+    detail <- identical(audience, "stat")
+    for (bl in irtc_report_diagnostics_blocks(mod, resp, lang,
+        detail=detail)) add(bl$type, bl$value, bl$caption)
+    for (bl in irtc_report_transparency_blocks(mod, lang, detail=detail))
+        add(bl$type, bl$value, bl$caption)
 
     add("h2", sections$next_steps$title)
     for (p in sections$next_steps$body) add("p", p)
