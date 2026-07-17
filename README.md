@@ -138,7 +138,7 @@ CI runs Markdown/link checks and `R CMD check` on every push and pull request.
 
 - [Documentation index](docs/README.md)
 - [English manual](docs/manuals/IRTC-Manual-English.md)
-- [中文使用手册 (V1.0.0)](docs/manuals/IRTC手册-中文-V1.0.0.md)
+- [中文使用手册 (V1.1.0)](docs/manuals/IRTC手册-中文-V1.1.0.md)
 - [CRAN submission guide (中文)](docs/cran-submission-guide-zh.md)
 - [WeianData Engineering Handbook](https://github.com/weiandata/.github/blob/main/handbook/README.md)
 
