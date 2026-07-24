@@ -2,6 +2,7 @@
 
 **English** | [简体中文](README.zh-CN.md)
 
+[![CRAN status](https://www.r-pkg.org/badges/version/IRTC)](https://CRAN.R-project.org/package=IRTC)
 [![R CMD check](https://github.com/weiandata/IRTC/actions/workflows/r-check.yml/badge.svg)](https://github.com/weiandata/IRTC/actions/workflows/r-check.yml)
 [![License: GPL v2+](https://img.shields.io/badge/License-GPL%20%3E%3D%202-blue.svg)](https://www.gnu.org/licenses/gpl-2.0)
 
@@ -12,9 +13,8 @@ Most IRT packages start after your data is already a clean numeric matrix and
 stop at a model object you have to dig results out of. IRTC does those two ends
 for you as well, while leaving the full expert API available underneath.
 
-> **Status:** submitted to CRAN, awaiting review. Until it is accepted, install
-> from GitHub (see [Install](#install)). The API is stable; 1.1.x is backward
-> compatible with 1.0.
+> **Status:** on CRAN — install with `install.packages("IRTC")`. The API is
+> stable; 1.1.x is backward compatible with 1.0.
 
 ## What it looks like
 
@@ -65,6 +65,9 @@ data, and estimates the model. Every expert argument passes straight through.
 ## Install
 
 ```r
+install.packages("IRTC")
+
+# development version:
 # install.packages("remotes")
 remotes::install_github("weiandata/IRTC")
 ```

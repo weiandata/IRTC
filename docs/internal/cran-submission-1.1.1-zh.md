@@ -3,6 +3,9 @@
 > 本文记录 IRTC 首次提交 CRAN 被自动检查退回的**真实经过**：CRAN 报了什么、根因是什么、怎么修的、怎么验证的。
 >
 > 流程性的操作步骤见 [CRAN 提交指南](cran-submission-guide-zh.md)，本文只记录这一次的事实与结论。
+>
+> **最终结果：1.1.1 已通过 CRAN 人工审核并上架**（2026-07，CRAN 邮件确认 “on its
+> way to CRAN”），是 IRTC 的首个 CRAN 版本。
 
 ## 时间线
 
@@ -13,6 +16,7 @@
 | — | 定位根因、修复、版本号升至 1.1.1 |
 | — | win-builder R-devel 复验：1 NOTE，tests 与 PDF 手册均 OK |
 | — | 提交 `IRTC_1.1.1.tar.gz` 至 CRAN 人工审核 |
+| 2026-07（审核后） | CRAN 邮件确认通过：“on its way to CRAN”，1.1.1 上架 |
 
 对应提交记录：`fix(cran): resolve 1.1.0 incoming pre-test errors; bump to 1.1.1`。
 

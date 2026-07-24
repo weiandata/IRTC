@@ -1,6 +1,10 @@
 # IRTC Release Status
 
-## 1.1.1 (verified 2026-07-17, submitted to CRAN)
+## 1.1.1 (verified 2026-07-17, accepted by CRAN 2026-07)
+
+**Accepted and published on CRAN** — the first CRAN release of IRTC.
+Submitted 2026-07-17; CRAN confirmed acceptance ("on its way to CRAN")
+following manual review. Install with `install.packages("IRTC")`.
 
 Packaging-only release. It exists because CRAN's incoming pre-tests
 rejected 1.1.0 with 2 ERRORs and 1 WARNING. No package code changed: the
