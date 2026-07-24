@@ -22,7 +22,8 @@ distributed to CRAN users.
   submission process should be run.
 - [CRAN submission record: 1.1.0 rejection and 1.1.1 resubmission (中文)](cran-submission-1.1.1-zh.md)
   — what actually happened: root cause of each pre-test failure and why each
-  fix was chosen.
+  fix was chosen. **Outcome: 1.1.1 was accepted and published on CRAN
+  (2026-07).**
 
 ## Governance
 

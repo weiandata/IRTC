@@ -74,11 +74,11 @@ Higher ability θ and lower item difficulty b_j mean a higher probability of a c
 ## 1.2 Installation
 
 ```r
-# from CRAN (once accepted)
+# from CRAN
 install.packages("IRTC")
 
 # or from a source tarball (contains C++, needs a compiler)
-install.packages("path/to/IRTC_1.1.0.tar.gz", repos = NULL, type = "source")
+install.packages("path/to/IRTC_1.1.1.tar.gz", repos = NULL, type = "source")
 library(IRTC)
 
 # optional helpers, installed on demand (Excel/SPSS import, Excel/Word

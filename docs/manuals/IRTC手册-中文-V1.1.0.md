@@ -268,30 +268,30 @@ x * 2       # 取出 x 乘以 2
 
 ## 2.6 第三步：安装 IRTC 包
 
-IRTC 是一个「插件（包）」，要先装进 R。你拿到的是一个文件 `IRTC_1.1.0.tar.gz`（源码包）。装它需要电脑能「编译 C++」（因为 IRTC 有高性能的底层代码）：
+IRTC 是一个「插件（包）」，要先装进 R。你拿到的是一个文件 `IRTC_1.1.1.tar.gz`（源码包）。装它需要电脑能「编译 C++」（因为 IRTC 有高性能的底层代码）：
 
 **先装编译工具（只需一次）：**
 - **Windows**：访问 <https://cran.r-project.org/bin/windows/Rtools/>，下载与你 R 版本匹配的 **Rtools**，安装。
 - **Mac**：打开「终端（Terminal）」应用，输入 `xcode-select --install` 回车，按提示安装命令行工具。
 - **Linux**：安装 `r-base-dev`（如 `sudo apt-get install r-base-dev`）。
 
-**再安装 IRTC（在 RStudio 控制台里）。** 首选从 CRAN 安装（上架后）：
+**再安装 IRTC（在 RStudio 控制台里）。** 首选从 CRAN 安装（已上架）：
 
 ```r
 install.packages("IRTC")
 ```
 
-如果你拿到的是源码包文件（`IRTC_1.1.0.tar.gz`），也可以本地安装：
+如果你拿到的是源码包文件（`IRTC_1.1.1.tar.gz`），也可以本地安装：
 
 ```r
-# 把引号里换成你电脑上 IRTC_1.1.0.tar.gz 的真实路径
-install.packages("C:/Users/你的名字/Downloads/IRTC_1.1.0.tar.gz",
+# 把引号里换成你电脑上 IRTC_1.1.1.tar.gz 的真实路径
+install.packages("C:/Users/你的名字/Downloads/IRTC_1.1.1.tar.gz",
                  repos = NULL, type = "source")
 ```
 
 > **可选功能包**：读 Excel 需要 readxl，读 SPSS/Stata/SAS 需要 haven，导出 Excel 需要 openxlsx，生成 Word 报告需要 officer。**不用提前装**——用到时 IRTC 会提示你一行命令安装。
 
-> **「路径」是什么？** 就是文件在电脑里的「地址」。比如下载到「下载」文件夹，Windows 路径常是 `C:/Users/你的名字/Downloads/IRTC_1.1.0.tar.gz`，Mac 常是 `/Users/你的名字/Downloads/IRTC_1.1.0.tar.gz`。**注意 R 里路径用正斜杠 `/`，不要用反斜杠 `\`。**
+> **「路径」是什么？** 就是文件在电脑里的「地址」。比如下载到「下载」文件夹，Windows 路径常是 `C:/Users/你的名字/Downloads/IRTC_1.1.1.tar.gz`，Mac 常是 `/Users/你的名字/Downloads/IRTC_1.1.1.tar.gz`。**注意 R 里路径用正斜杠 `/`，不要用反斜杠 `\`。**
 >
 > **找路径的笨办法**：在「文件资源管理器/访达」里找到那个文件，右键看属性/简介里的位置；或把文件拖进 RStudio 控制台，它会自动显示路径。
 

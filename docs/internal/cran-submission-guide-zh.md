@@ -2,7 +2,8 @@
 
 > 本指南面向第一次向 CRAN 提交 R 包的作者，覆盖从准备、检查、构建、提交到收到结果后处理的**完整流程**，并列出 IRTC 的包级合规检查要求。
 >
-> 当前状态：1.1.1 已提交 CRAN 人工审核。最近一次完整 `R CMD check --as-cran`
+> 当前状态：**1.1.1 已通过 CRAN 审核并上架**（2026-07，IRTC 首个 CRAN 版本），
+> 用 `install.packages("IRTC")` 即可安装。提交前最近一次完整 `R CMD check --as-cran`
 > 为 0 ERROR、0 WARNING、1 NOTE（“New submission” + 拼写误报）；win-builder
 > R-devel 复验同为 1 NOTE。
 >
