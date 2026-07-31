@@ -19,3 +19,6 @@ IRTC.Rcheck/
 src/*.o
 src/*.so
 src/*.dll
+
+# WAEF local cache
+.waef/cache/

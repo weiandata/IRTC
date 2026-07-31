@@ -1,0 +1,7 @@
+name: "IRTC"
+owner: "package-maintainers"
+status: "active"
+purpose: "Provide item-response-theory analysis and reviewable reporting"
+risk: "high"
+publication: "allowed"
+language: "R"
