@@ -18,3 +18,4 @@
 ^examples$
 ^scripts$
 ^cran-comments[.]md$
+^\.waef$
