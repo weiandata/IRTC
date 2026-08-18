@@ -9,6 +9,9 @@
   page) and `tables.lua` (table header styling and line-break hints). It needs
   the macOS system fonts Songti SC, PingFang SC, Palatino, Avenir Next and
   Menlo.
+- `build-workload-pdf.sh` builds the 5-page Chinese workload statement
+  (`docs/IRTC工作量说明_中文_V1.1.1.pdf`) from
+  `scripts/manual-pdf/workload.tex`, which shares the manual's design.
 
 Use this directory only for small utility scripts that support repository tasks
 such as setup, validation, documentation, release preparation, or maintenance.

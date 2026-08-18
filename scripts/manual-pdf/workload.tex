@@ -1,0 +1,342 @@
+% =====================================================================
+%  IRTC 工作量说明（中文 · 5 页）
+%  与中文手册共用同一套视觉设计：scripts/manual-pdf/style.tex
+% =====================================================================
+\documentclass[11pt, oneside]{book}
+
+\usepackage{xcolor}
+\usepackage[a4paper, top=3cm, bottom=2.5cm, left=2.4cm, right=2.4cm,
+            headsep=0.55cm, footskip=1.1cm]{geometry}
+\usepackage{fontspec}
+\usepackage{xeCJK}
+\usepackage{fancyvrb}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{hyperref}
+
+\setmainfont{Palatino}
+\setmonofont{Menlo}[Scale=0.86, HyphenChar=None]
+\setCJKmainfont{Songti SC}[BoldFont=Songti SC Bold, ItalicFont=Kaiti SC]
+
+\input{style.tex}
+\usetikzlibrary{arrows.meta}
+
+\hypersetup{
+  pdftitle={IRTC 工作量说明（版本 1.1.1）},
+  pdfauthor={马崑翔 Kunxiang Ma},
+  pdfsubject={IRTC 项目反应理论分析包 —— 代码量、文字量、技术路径与实现效果},
+  pdfcreator={XeLaTeX},
+  colorlinks=true, linkcolor=IRTCteal, urlcolor=IRTCteal}
+
+% 页眉页脚：本文件不使用手册的页眉文案
+\fancyhead[R]{\LightFont\fontsize{8.5}{10}\selectfont\color{IRTCslate}%
+  IRTC 工作量说明 · V1.1.1}
+
+% 分节页：与手册章首页同一形制
+\newcommand{\WLsection}[3]{%
+  \clearpage
+  \thispagestyle{plain}%
+  \IRTCchapterhead{#1}{#2}{#3}%
+  \markboth{#3}{}%
+  \vspace*{78pt}%
+}
+
+\newcommand{\WLnote}[1]{%
+  \begin{tcolorbox}[enhanced, colback=IRTCmist, colframe=IRTCmist, boxrule=0pt,
+    arc=2pt, left=12pt, right=12pt, top=9pt, bottom=9pt,
+    borderline west={2.8pt}{0pt}{IRTCteal}, before skip=10pt, after skip=6pt]
+  {\fontsize{10}{16.5}\selectfont\color{IRTCink}#1}
+  \end{tcolorbox}}
+
+\begin{document}
+
+% =====================================================================
+%  第 1 页 · 封面
+% =====================================================================
+\thispagestyle{IRTCblank}
+\AddToShipoutPictureBG*{%
+  \begin{tikzpicture}[remember picture, overlay]
+    \shade[top color=IRTCinkdeep, bottom color=IRTCinkmid]
+      (current page.south west) rectangle (current page.north east);
+    \begin{scope}
+      \clip (current page.south west) rectangle (current page.north east);
+      \begin{scope}[shift={([xshift=14.6cm, yshift=0.75cm]current page.south west)},
+                    x=1.35cm, y=3.3cm]
+        \foreach \slope/\tint in {1.1/IRTCgoldsoft!58!IRTCinkmid,
+                                  1.9/IRTCteal!62!IRTCinkmid,
+                                  0.7/white!30!IRTCinkmid,
+                                  1.5/IRTCgoldsoft!26!IRTCinkmid}{
+          \draw[\tint, line width=1.1pt]
+            plot[domain=-2.4:3.6, samples=100, smooth]
+            (\x, {1/(1+exp(-\slope*(\x+0.35)))});}
+      \end{scope}
+    \end{scope}
+    \fill[IRTCgold] ([xshift=2.6cm, yshift=-2.5cm]current page.north west)
+      rectangle ([xshift=4.4cm, yshift=-2.58cm]current page.north west);
+    \fill[IRTCgold!88!IRTCinkdeep] (current page.south west)
+      rectangle ([yshift=0.32cm]current page.south east);
+  \end{tikzpicture}}
+
+\vspace*{1.05cm}
+{\LightFont\fontsize{10.5}{14}\selectfont\color{IRTCgoldsoft}%
+ R 语言项目反应理论（IRT）分析包}\par
+
+\vspace{1.05cm}
+{\LatinDisplay\fontsize{54}{56}\selectfont\color{white}IRTC}\par
+\vspace{0.3cm}
+{\HeadFont\fontsize{27}{34}\selectfont\color{white}工作量说明}\par
+\vspace{0.42cm}
+{\color{IRTCgold}\rule{3.2cm}{1.6pt}}\par
+\vspace{0.42cm}
+{\LightFont\fontsize{11.5}{18}\selectfont\color{IRTCgoldsoft}%
+ 代码量 · 文字量 · 技术路径 · 实现效果 \quad|\quad 版本 1.1.1，已发布于 CRAN}\par
+
+\vspace{0.75cm}
+{\HeadFont\fontsize{12.5}{17}\selectfont\color{white}%
+ 它和现在常见的 IRT 软件包有什么不一样？}\par
+\vspace{0.35cm}
+{\LightFont\fontsize{10}{16}\selectfont\color{white}
+常用的 IRT 包（如 mirt、TAM、ltm）默认使用者是会写程序的统计人员：数据得先自己
+整理成一张干净的数字表，跑完还得自己把结果从模型里抠出来、再手工排版成报告。
+IRTC 把这一头一尾也接上了：\par
+\vspace{0.34cm}
+\hspace{0.2cm}\textcolor{IRTCgoldsoft}{\textbf{1}}\quad
+\textbf{原始表格直接进}——Excel、CSV、SPSS、Stata、SAS 都能直接读，
+学号列、缺失码、A/B/C/D 选项作答由软件自动识别与计分。\par
+\vspace{0.16cm}
+\hspace{0.2cm}\textcolor{IRTCgoldsoft}{\textbf{2}}\quad
+\textbf{成品结果直接出}——只要一条命令，就生成三个可交付的 Excel 表和三种版式的
+Word/HTML 报告，不用再自己排版。\par
+\vspace{0.16cm}
+\hspace{0.2cm}\textcolor{IRTCgoldsoft}{\textbf{3}}\quad
+\textbf{结论用大白话讲}——每道题好不好、该不该改，都给中文判断、原因和建议，
+而不是只给一堆系数。\par
+\vspace{0.16cm}
+\hspace{0.2cm}\textcolor{IRTCgoldsoft}{\textbf{4}}\quad
+\textbf{算得更大}——自研的有界内存算法，让普通笔记本也能处理百万人规模的多维模型。\par
+\vspace{0.16cm}
+\hspace{0.2cm}\textcolor{IRTCgoldsoft}{\textbf{5}}\quad
+\textbf{给自动化和 AI 留了门}——结果是结构固定的机器可读数据，报错自带错误码与修复建议。\par}
+
+\vfill
+
+{\color{white!35}\rule{5.5cm}{0.5pt}}\par
+\vspace{0.38cm}
+{\LightFont\fontsize{12}{19}\selectfont\color{white}%
+ \textbf{R 包创建人 / 维护人：马崑翔}\par}
+{\LightFont\fontsize{10.5}{17}\selectfont\color{IRTCgoldsoft}%
+ Kunxiang Ma\par}
+\vspace{0.4cm}
+{\LightFont\fontsize{10.5}{16}\selectfont\color{white}%
+ 软件版本 1.1.1（2026-07-17）\quad · \quad 本说明 2026 年 8 月\par}
+\vspace{0.7cm}
+
+% =====================================================================
+%  第 2 页 · 代码量
+% =====================================================================
+\WLsection{01}{第一部分}{代码量}
+
+以仓库当前（版本 1.1.1）内容统计，项目共 \textbf{247 个源文件、19{,}874 行}。
+其中真正的实现代码（R 与 C++）约 1.18 万行，自动化测试 5{,}282 行，
+测试与实现的行数比约为 \textbf{1 : 2.2}。
+
+\vspace{2pt}
+{\fontsize{10}{15}\selectfont
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{4.3cm}rr>{\raggedright\arraybackslash}p{6.6cm}@{}}
+\toprule
+\strut\textcolor{IRTCink}{\bfseries 组成部分} &
+\textcolor{IRTCink}{\bfseries 文件} &
+\textcolor{IRTCink}{\bfseries 行数} &
+\textcolor{IRTCink}{\bfseries 内容} \\
+\midrule
+\strut R 源码 \IRTColdtexttt{R/} & 131 & 10{,}579 &
+估计层、数据层、统计层、输出层、AI 接口与结构化报错 \\
+\strut C++ 源码 \IRTColdtexttt{src/} & 11 & 1{,}255 &
+并行 E 步、概率与充分统计量、2PL/GPCM 求解、流式引擎 \\
+\strut 自动化测试 \IRTColdtexttt{tests/} & 64 & 5{,}282 &
+309 个测试块、1{,}087 处断言 \\
+\strut 帮助文档 \IRTColdtexttt{man/} & 21 & 1{,}171 &
+每个导出函数的 R 标准帮助页与示例 \\
+\strut 机器接口 \IRTColdtexttt{inst/} & 4 & 316 &
+\IRTColdtexttt{llms.txt} API 摘要、版权声明等 \\
+\strut 构建与排版 \IRTColdtexttt{scripts/} & 15 & 1{,}204 &
+发布校验、基准测试、手册 PDF 设计与生成 \\
+\strut 示例 \IRTColdtexttt{examples/} & 1 & 67 &
+端到端使用示例 \\
+\midrule
+\strut\textbf{合计} & \textbf{247} & \textbf{19{,}874} & \\
+\bottomrule
+\end{tabular}\par}
+
+\vspace{10pt}
+\textbf{去掉空行与纯注释后的有效代码行}：R 层 8{,}479 行、C++ 层 952 行、
+测试 4{,}420 行、帮助文档 1{,}063 行。
+
+\vspace{4pt}
+\textbf{对外接口规模}：20 个导出函数 + 12 个 S3 方法（\IRTColdtexttt{summary}、
+\IRTColdtexttt{print}、\IRTColdtexttt{plot}、\IRTColdtexttt{anova}、
+\IRTColdtexttt{logLik} 等），17 个注册的 C++ 原生符号，3 个内置仿真数据集
+（\IRTColdtexttt{data.sim.rasch}、\IRTColdtexttt{data.gpcm}、\IRTColdtexttt{data.mc}）。
+
+\WLnote{\textbf{这些行数意味着什么？}\quad
+估计核心（\IRTColdtexttt{irtc.mml} 系列 + C++）是「把模型算对、算快」的部分；
+而占比更大的 R 层，是把「原始表格 → 清洗 → 计分 → 体检 → 估计 → 评级 →
+成品交付」这条链路补齐的部分。后者正是普通使用者能少写代码、
+少犯错的原因，也是本项目区别于现有 IRT 包的主要投入所在。}
+
+% =====================================================================
+%  第 3 页 · 文字量
+% =====================================================================
+\WLsection{02}{第二部分}{文字量}
+
+项目的文字工作分三类：面向使用者的手册、R 内置帮助页、以及仓库文档
+（发布记录、贡献与安全说明、合规与提交记录等）。
+全部 Markdown 文档合计 \textbf{21 个文件、7{,}822 行、约 29.1 万字符}，
+R 帮助页另有 1{,}171 行。
+
+\vspace{2pt}
+{\fontsize{10}{15}\selectfont
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{4.9cm}>{\raggedright\arraybackslash}p{4.4cm}>{\raggedright\arraybackslash}p{6.0cm}@{}}
+\toprule
+\strut\textcolor{IRTCink}{\bfseries 文档} &
+\textcolor{IRTCink}{\bfseries 规模} &
+\textcolor{IRTCink}{\bfseries 说明} \\
+\midrule
+\strut 中文使用手册 & 1{,}767 行 \par 63{,}262 字符（含 22{,}771 个汉字）&
+15 章 + 4 个附录，从「电脑上什么都没装」讲到读懂每一个数字 \\
+\strut 英文使用手册 & 675 行 \par 36{,}770 字符 &
+面向英文使用者的完整手册 \\
+\strut R 内置帮助页 & 21 个 Rd 文件 \par 1{,}171 行 &
+\IRTColdtexttt{?irtc}、\IRTColdtexttt{?irtc.mml} 等，随包安装 \\
+\strut 仓库文档 & 21 个 Markdown 文件 \par 7{,}822 行 / 29.1 万字符 &
+中英文 README、版本记录、发布与提交记录、贡献与安全说明 \\
+\strut AI 接口说明 & 98 行 &
+\IRTColdtexttt{inst/llms.txt}，供 AI 助手一次读入的 API 与数据结构摘要 \\
+\bottomrule
+\end{tabular}\par}
+
+\vspace{10pt}
+除静态文档外，软件\textbf{运行时输出的文字同样是双语的}：白话摘要、
+四级题目质量评级的原因与建议、数据体检的问题清单、三种受众的报告正文、
+以及全部报错信息，都各有中英两套文案，随
+\IRTColdtexttt{options(irtc.lang)} 切换。这部分文案写在 R 源码里，
+已计入前一页的代码行数。
+
+\vspace{4pt}
+本次 1.1.1 正式发布还新增了中文手册的 PDF 排版工程（封面、引言、目录、
+章节页、尾页与配色体系），共 5 个设计文件，
+已计入 \IRTColdtexttt{scripts/} 的行数中。
+
+\WLnote{\textbf{为什么写这么多字？}\quad
+本项目的目标读者里有相当一部分\textbf{没有编程和统计基础}。
+对这类使用者来说，「软件能算」只解决了一半问题，
+「看得懂、照着做、出了错知道怎么修」才是另一半。
+因此手册用零基础语言重写了全部概念，报错也全部配了原因与修复建议。}
+
+% =====================================================================
+%  第 4 页 · 技术路径
+% =====================================================================
+\WLsection{03}{第三部分}{技术路径}
+
+整体结构是「两端加一芯」：数据层把各种原始表格变成可估计的数据，
+估计核心用边际极大似然（MML）+ EM 算法求解，输出层把结果变成人和机器都能直接用的东西。
+
+\vspace{6pt}
+\begin{center}
+\begin{tikzpicture}[font=\LightFont\fontsize{9.5}{13}\selectfont,
+  box/.style={rounded corners=3pt, draw=IRTCrule, fill=IRTCmist,
+              text width=3.8cm, align=center, inner ysep=9pt, text=IRTCink},
+  core/.style={rounded corners=3pt, draw=IRTCink, fill=IRTCink,
+               text width=5.1cm, align=center, inner ysep=10pt, text=white},
+  arrow/.style={-{Straight Barb[length=4pt]}, draw=IRTCgold, line width=1pt}]
+  \node[box] (a) at (0,0) {\textbf{数据层}\\[2pt] 读取 · 清洗 · 计分\\ Q 矩阵 · 数据体检};
+  \node[core] (b) at (6.0,0) {\textbf{估计核心（MML + EM）}\\[2pt]
+        C++ 并行 E 步 · 维度分解\\ grid / streaming 自动路由\\ SQUAREM 加速 · 可选受控精度};
+  \node[box] (c) at (12.0,0) {\textbf{输出层}\\[2pt] 白话摘要 · 质量评级\\ Excel · 报告 · 图 · JSON};
+  \draw[arrow] (a) -- (b);
+  \draw[arrow] (b) -- (c);
+  \node[text=IRTCslate, font=\LightFont\fontsize{8.5}{11}\selectfont]
+    at (6.0,-1.8) {全程双语输出，全部报错带错误码 · 原因 · 修复建议};
+\end{tikzpicture}
+\end{center}
+
+\vspace{4pt}
+{\fontsize{10}{15}\selectfont
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{4.9cm}>{\raggedright\arraybackslash}p{10.4cm}@{}}
+\toprule
+\strut\textcolor{IRTCink}{\bfseries 关键技术} &
+\textcolor{IRTCink}{\bfseries 作用} \\
+\midrule
+\strut C++ 多线程与循环重排 &
+把最耗时的 E 步交给 C++ 并行计算，减少重复读取与中间复制 \\
+\strut 维度分解（题间多维）&
+利用「每题只属于一个维度」，把主要计算量从约 N×I×Q\textsuperscript{D}
+降为 N×I×Q + N×D×Q\textsuperscript{D} \\
+\strut 分块流式 E 步 &
+不保存全部被试的完整后验矩阵，内存由随人数增长改为受块大小控制 \\
+\strut SQUAREM 与安全化 Newton &
+加快 EM 收敛，并在坏初值或病态数据下保持稳定 \\
+\strut 引擎自动路由 &
+按人数、题数、维度与内存预测在 grid / streaming 间自动选择，并说明理由 \\
+\strut 受控精度剪枝（可选）&
+删除低权重积分节点换取提速，同时用分层抽样\textbf{实测}误差并出具报告 \\
+\bottomrule
+\end{tabular}\par}
+
+\vspace{8pt}
+\textbf{精确优先原则}：默认路径不做任何近似——完整积分网格、精确 E 步；
+提速手段一律是可选开关，且开启后必须以实测误差报告为准。
+阻尼、线搜索与正定修复只用于稳定求解，不改变统计目标；
+任何会改变估计结果的设置都需要使用者显式开启。
+
+% =====================================================================
+%  第 5 页 · 实现效果
+% =====================================================================
+\WLsection{04}{第四部分}{实现效果}
+
+{\fontsize{10}{15}\selectfont
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{3.6cm}>{\raggedright\arraybackslash}p{11.7cm}@{}}
+\toprule
+\strut\textcolor{IRTCink}{\bfseries 方面} &
+\textcolor{IRTCink}{\bfseries 已达到的结果} \\
+\midrule
+\strut 发布状态 &
+版本 1.1.1 已通过 CRAN 审核并上架，使用者一条
+\IRTColdtexttt{install.packages("IRTC")} 即可安装；Windows 与 macOS 直接获得
+编译好的二进制包 \\
+\strut 质量验证 &
+\IRTColdtexttt{R CMD check -{}-as-cran} 0 错误 0 警告；1{,}191 项自动化测试全部通过；
+整体代码覆盖率 96.0\%，关键模块 ≥ 95\%；macOS / Windows / Linux 三平台持续集成 \\
+\strut 规模与性能 &
+百万样本、多维 GPCM 原型测试中，流式引擎约 99 秒/次迭代，峰值内存约 2.4 GB；
+同规模的传统完整后验方案可能需要 TB 级内存 \\
+\strut 模型覆盖 &
+Rasch/1PL、PCM、PCM2、RSM、2PL、GPCM；单维与题间多维；
+潜在回归、多组比较、抽样权重、固定参数 \\
+\strut 交付效果 &
+一条命令从 Excel 到成品：三个可直接交付的 Excel（题目质量表、跨年度链接参数表、
+被试能力表）+ 三种受众版式的 Word/HTML 报告 + 诊断图 \\
+\strut 自动化友好 &
+\IRTColdtexttt{irtc\_results()} / \IRTColdtexttt{irtc\_json()} 输出结构冻结的
+机器可读结果；全部报错带错误码、原因与修复建议，可被程序直接捕获处理 \\
+\bottomrule
+\end{tabular}\par}
+
+\vspace{12pt}
+{\HeadFont\fontsize{13}{18}\selectfont\color{IRTCink}%
+\textcolor{IRTCgold}{\rule[-0.05em]{3pt}{0.92em}}\hspace{0.6em}一句话总结}\par
+\vspace{4pt}
+同类软件解决的是「模型能不能算出来」；本项目在此之上，
+把「原始数据怎么进来」「结果怎么读懂」「成品怎么出去」「机器怎么调用」
+四件事一并做完，并用 CRAN 的公开审核、96\% 的测试覆盖率和百万级规模验证证明它能用、
+可信、跑得动。
+
+\vspace{1.1cm}
+{\color{IRTCgold}\rule{2.6cm}{1.2pt}}\par
+\vspace{0.3cm}
+{\HeadFont\fontsize{12}{17}\selectfont\color{IRTCink}马崑翔}\par
+{\LightFont\fontsize{10}{15}\selectfont\color{IRTCslate}%
+ IRTC 创建人 / 维护人 \quad · \quad 2026 年 8 月}\par
+
+\end{document}

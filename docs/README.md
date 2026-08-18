@@ -16,6 +16,12 @@ Inside R, every function has standard help: `?irtc`, `?irtc.mml`,
 For AI agents and automated pipelines, `inst/llms.txt` is a compact API
 reference and `irtc_results()` / `irtc_json()` return a stable schema.
 
+## Project overview
+
+- [IRTC 工作量说明（中文 · PDF）](IRTC工作量说明_中文_V1.1.1.pdf) — a five-page
+  statement of code volume, documentation volume, technical approach and
+  delivered results (rebuild with `scripts/build-workload-pdf.sh`).
+
 ## Internal documentation
 
 Development and release process records, kept for maintainer reference — not
