@@ -6,8 +6,9 @@ Start here. The manuals are written for people using IRTC, not for people
 developing it.
 
 - [IRTC Manual (English)](manuals/IRTC-Manual-English.md)
-- [IRTC 使用手册（中文）](manuals/IRTC手册-中文-V1.1.0.md)
-  (PDF can be regenerated with `scripts/build-manual-pdf.sh`)
+- [IRTC 使用手册（中文）](manuals/IRTC手册-中文-V1.1.1.md) —
+  [designed PDF edition](manuals/IRTC使用手册_中文_V1.1.1.pdf)
+  (rebuild with `scripts/build-manual-pdf.sh`)
 
 Inside R, every function has standard help: `?irtc`, `?irtc.mml`,
 `help(package = "IRTC")`.

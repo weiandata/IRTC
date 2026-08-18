@@ -127,7 +127,7 @@ See [examples/basic-usage.R](examples/basic-usage.R) for a runnable tour.
 ## Documentation
 
 - [English manual](docs/manuals/IRTC-Manual-English.md) —
-  [中文使用手册](docs/manuals/IRTC手册-中文-V1.1.0.md)
+  [中文使用手册](docs/manuals/IRTC手册-中文-V1.1.1.md)
 - In R: `?irtc`, `?irtc.mml`, `help(package = "IRTC")`
 - [Documentation index](docs/README.md)
 

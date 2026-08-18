@@ -1,7 +1,14 @@
 # Scripts
 
-- `build-manual-pdf.sh` rebuilds the Chinese user-manual PDF from
-  `docs/manuals/IRTC手册-中文-V1.1.0.md` using Pandoc and XeLaTeX.
+- `build-manual-pdf.sh` rebuilds the designed Chinese user-manual PDF
+  (`docs/manuals/IRTC使用手册_中文_V1.1.1.pdf`) from
+  `docs/manuals/IRTC手册-中文-V1.1.1.md` using Pandoc and XeLaTeX. The design
+  lives in `scripts/manual-pdf/`: `preprocess.py` (Markdown to book
+  structure), `style.tex` (palette, fonts, chapter openers, callouts, code
+  blocks, tables), `front.tex` (cover, colophon, preface), `back.tex` (end
+  page) and `tables.lua` (table header styling and line-break hints). It needs
+  the macOS system fonts Songti SC, PingFang SC, Palatino, Avenir Next and
+  Menlo.
 
 Use this directory only for small utility scripts that support repository tasks
 such as setup, validation, documentation, release preparation, or maintenance.

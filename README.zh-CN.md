@@ -112,7 +112,7 @@ if (chk$ok) {
 
 ## 文档
 
-- [中文使用手册](docs/manuals/IRTC手册-中文-V1.1.0.md) —
+- [中文使用手册](docs/manuals/IRTC手册-中文-V1.1.1.md) —
   [English manual](docs/manuals/IRTC-Manual-English.md)
 - 在 R 里：`?irtc`、`?irtc.mml`、`help(package = "IRTC")`
 - [文档索引](docs/README.md)
