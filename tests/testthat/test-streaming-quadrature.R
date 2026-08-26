@@ -234,3 +234,168 @@ test_that("case weights are validated", {
   expect_equal(err2$code, "E410")
   expect_equal(irtc_prep_case_weights(NULL, 4), rep(1, 4))
 })
+
+## --- weighted norm-referenced person columns -------------------------------
+
+test_that("percentile and t_score follow the sampling weights", {
+  d <- sq_sim(n = 600, J = 6, D = 1, seed = 41)
+  set.seed(41); wt <- runif(nrow(d$resp), 0.5, 3)
+  dd <- data.frame(pid = seq_len(nrow(d$resp)), d$resp, wt = wt)
+  m <- irtc(dd, model = "2PL", id = "pid", weights = "wt", verbose = FALSE)
+  p <- irtc_results(m, resp = d$resp)$persons
+  eap <- m$person$EAP
+  ## the same normalization the function applies, so the comparison is exact
+  ## rather than differing in the last rounded digit
+  w <- IRTC:::irtc_prep_case_weights(m$pweights, length(eap))
+  ## a percentile is the weighted share below, ties at half weight
+  expect_equal(p$percentile, round(IRTC:::irtc_weighted_percentile(eap, w), 1))
+  expect_equal(p$t_score, round(IRTC:::irtc_weighted_tscore(eap, w), 1))
+  ## and it genuinely differs from the unweighted norm
+  plain <- 100 * (rank(eap) - 0.5) / length(eap)
+  expect_false(isTRUE(all.equal(p$percentile, round(plain, 1))))
+  ## the weighted T score still has weighted mean 50 and weighted SD 10
+  expect_equal(IRTC:::irtc_weighted_mean(p$t_score, w), 50, tolerance = 0.05)
+  expect_equal(IRTC:::irtc_weighted_sd(p$t_score, w), 10, tolerance = 0.05)
+})
+
+test_that("unweighted person norms are unchanged", {
+  d <- sq_sim(n = 400, J = 6, D = 1, seed = 43)
+  dd <- data.frame(pid = seq_len(nrow(d$resp)), d$resp)
+  m <- irtc(dd, model = "2PL", id = "pid", verbose = FALSE)
+  p <- irtc_results(m, resp = d$resp)$persons
+  eap <- m$person$EAP
+  expect_equal(p$percentile, round(100 * (rank(eap) - 0.5) / length(eap), 1))
+  expect_equal(p$t_score, round(50 + 10 * (eap - mean(eap)) / stats::sd(eap), 1))
+})
+
+test_that("the weighted percentile reduces to the unweighted rank, ties included", {
+  v <- c(1, 2, 2, 2, 3, 5, 5)
+  w1 <- rep(1, length(v))
+  expect_equal(IRTC:::irtc_weighted_percentile(v, w1),
+               100 * (rank(v) - 0.5) / length(v))
+  ## giving a case weight 2 must equal listing it twice
+  x <- c(1, 2, 2, 3, 5); xw <- c(2, 1, 1, 1, 1)
+  xr <- c(1, 1, 2, 2, 3, 5)
+  expect_equal(IRTC:::irtc_weighted_percentile(x, xw)[1],
+               IRTC:::irtc_weighted_percentile(xr, rep(1, 6))[1])
+  ## missing values stay missing and do not shift the others
+  vn <- c(1, NA, 2, 3)
+  got <- IRTC:::irtc_weighted_percentile(vn, rep(1, 4))
+  expect_true(is.na(got[2]))
+  expect_equal(got[-2], 100 * (rank(c(1, 2, 3)) - 0.5) / 3)
+})
+
+## --- answer keys are written in the data file's own category coding --------
+
+test_that("a numeric answer key survives category recoding", {
+  ## responses coded 1..4, the way a survey file actually stores them
+  set.seed(53)
+  raw <- data.frame(
+    pid = 1:200,
+    Q1 = sample(1:4, 200, TRUE),
+    Q2 = sample(1:4, 200, TRUE),
+    Q3 = sample(1:3, 200, TRUE))
+  f <- tempfile(fileext = ".csv")
+  on.exit(unlink(f), add = TRUE)
+  utils::write.csv(raw, f, row.names = FALSE)
+
+  d <- irtc_read(f, id = "pid", verbose = FALSE)
+  ## irtc_read renumbers 1..4 to 0..3 but remembers the original categories
+  expect_equal(d$recode_map$Q1, c(1, 2, 3, 4))
+  expect_equal(sort(unique(d$resp$Q1)), c(0, 1, 2, 3))
+
+  ## the key is written in the file's coding, not the renumbered one
+  key <- c(Q1 = 2, Q2 = 4, Q3 = 1)
+  scored <- irtc_score(d, key = key)
+  expect_equal(as.numeric(scored$resp$Q1), as.numeric(raw$Q1 == 2))
+  expect_equal(as.numeric(scored$resp$Q2), as.numeric(raw$Q2 == 4))
+  expect_equal(as.numeric(scored$resp$Q3), as.numeric(raw$Q3 == 1))
+
+  ## and the same key through irtc()
+  m <- irtc(f, model = "2PL", key = key, id = "pid", verbose = FALSE)
+  expect_equal(as.numeric(colMeans(m$resp)),
+               as.numeric(c(mean(raw$Q1 == 2), mean(raw$Q2 == 4),
+                            mean(raw$Q3 == 1))))
+})
+
+test_that("an answer nobody gave is reported instead of scoring everyone wrong", {
+  set.seed(59)
+  raw <- data.frame(pid = 1:150,
+                    Q1 = sample(1:3, 150, TRUE),
+                    Q2 = sample(1:3, 150, TRUE))
+  f <- tempfile(fileext = ".csv")
+  on.exit(unlink(f), add = TRUE)
+  utils::write.csv(raw, f, row.names = FALSE)
+  d <- irtc_read(f, id = "pid", verbose = FALSE)
+  w <- tryCatch(irtc_score(d, key = c(Q1 = 9, Q2 = 1)),
+                warning = function(e) e)
+  expect_s3_class(w, "irtc_warning")
+  expect_equal(w$code, "W205")
+  expect_true("Q1" %in% names(w$data$unmatched))
+})
+
+test_that("scoring without irtc_read is unaffected", {
+  ## a bare data frame was never recoded, so the key applies as given
+  raw <- data.frame(Q1 = c(1, 2, 3), Q2 = c(3, 2, 1))
+  got <- irtc_score(raw, key = c(Q1 = 2, Q2 = 2))
+  expect_equal(as.numeric(got$Q1), c(0, 1, 0))
+  expect_equal(as.numeric(got$Q2), c(0, 1, 0))
+})
+
+test_that("rid is recognised as a person id column", {
+  set.seed(61)
+  raw <- data.frame(rid = 5001:5100,
+                    Q1 = sample(0:1, 100, TRUE),
+                    Q2 = sample(0:1, 100, TRUE))
+  f <- tempfile(fileext = ".csv")
+  on.exit(unlink(f), add = TRUE)
+  utils::write.csv(raw, f, row.names = FALSE)
+  d <- irtc_read(f, verbose = FALSE)
+  expect_equal(as.integer(d$pid), raw$rid)
+  expect_equal(colnames(d$resp), c("Q1", "Q2"))
+})
+
+## --- person identifiers survive as text ------------------------------------
+
+test_that("a round numeric id is not written in scientific notation", {
+  ## as.character(266000000) is "2.66e+08"; ids like this occur in real
+  ## survey files and silently corrupt the key used to join results back
+  expect_equal(IRTC:::irtc_format_id(c(265150099, 266000000, 1e15 + 7)),
+               c("265150099", "266000000", "1000000000000007"))
+  expect_equal(IRTC:::irtc_format_id(c("a", "b")), c("a", "b"))
+  expect_equal(IRTC:::irtc_format_id(c(1.5, 2.5)), c("1.5", "2.5"))
+
+  set.seed(67)
+  n <- 120
+  raw <- data.frame(pid = c(266000000, 265150099, 2.5e8 + seq_len(n - 2)),
+                    Q1 = sample(0:1, n, TRUE), Q2 = sample(0:1, n, TRUE),
+                    Q3 = sample(0:1, n, TRUE), Q4 = sample(0:1, n, TRUE))
+  m <- irtc(raw, model = "2PL", id = "pid", verbose = FALSE)
+  got <- irtc_results(m)$persons$person_id
+  expect_equal(got[1], "266000000")
+  expect_false(any(grepl("e\\+", got)))
+  expect_equal(irtc_person_table(m)[[1]][1], "266000000")
+})
+
+## --- the streaming engine keeps the data and the item names ---------------
+
+test_that("a streaming fit carries its response data and item names", {
+  d <- sq_sim(n = 500, J = 6, D = 2, seed = 71)
+  Q <- d$Q
+  dimnames(Q) <- list(colnames(d$resp), c("DimA", "DimB"))
+  dd <- data.frame(pid = seq_len(nrow(d$resp)), d$resp)
+  m <- irtc(dd, model = "GPCM", q = Q, ndim = 2, id = "pid", verbose = FALSE)
+
+  ## item_id keys the cross-year linking workbook: generic I1..In would make a
+  ## multidimensional export unusable for linking
+  expect_equal(as.character(m$item$item), colnames(d$resp))
+  expect_equal(dimnames(m$B)[[1]], colnames(d$resp))
+  expect_equal(irtc_param_table(m)$item_id, colnames(d$resp))
+  expect_false(anyNA(irtc_param_table(m)$p_value))
+
+  ## and the enrichment functions no longer need resp= passed back in
+  expect_false(is.null(m$resp))
+  expect_s3_class(irtc_quality(m), "irtc_quality")
+  expect_s3_class(irtc_itemfit(m), "irtc_itemfit")
+  expect_equal(irtc_results(m)$items$item_id, colnames(d$resp))
+})

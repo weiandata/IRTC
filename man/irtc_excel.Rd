@@ -33,7 +33,7 @@ irtc_excel(mod, dir = ".", prefix = "IRTC", lang = irtc_lang(),
 
 irtc_param_table(mod, resp = NULL, weights = NULL)
 
-irtc_person_table(mod, lang = irtc_lang())
+irtc_person_table(mod, lang = irtc_lang(), weights = NULL)
 }
 \arguments{
 \item{mod}{A fitted \code{irtc} model object.}
@@ -43,9 +43,14 @@ irtc_person_table(mod, lang = irtc_lang())
     The linking schema of file 2 is language-independent.}
 \item{resp}{The response data; only needed when the model object does not
     store it (streaming engine).}
-\item{weights}{Optional case (sampling) weights, one per person, used for
-    the \code{p_value} column so it shares the basis of the weighted IRT
-    parameters beside it. Defaults to the case weights stored on the model.}
+\item{weights}{Optional case (sampling) weights, one per person. For
+    \code{irtc_param_table} they weight the \code{p_value} column so it
+    shares the basis of the weighted IRT parameters beside it; for
+    \code{irtc_person_table} they weight the norm-referenced
+    \code{percentile} and \code{T_score} columns, so those describe the
+    population the weights represent rather than the achieved sample. Both
+    default to the case weights stored on the model, and constant weights
+    reproduce the unweighted values exactly.}
 \item{overwrite}{Logical: overwrite existing files? Otherwise an error of
     class \code{irtc_error_export} (code \code{E501}) is raised.}
 \item{verbose}{Logical: print a completion message?}
@@ -65,10 +70,11 @@ several dimensions at once (within-item structure) has no single slope:
 \code{slope_a} is then the sum of its loadings and \code{n_loadings} is
 above 1, flagging the value as a composite.
 
-Note that the person-level \code{percentile} and \code{t_score} columns
-of \code{irtc_person_table} are always computed on the unweighted sample,
-so they describe the respondents themselves rather than the weighted
-population.
+The person-level \code{percentile} and \code{T_score} columns are
+norm-referenced: with case weights they are computed on the weighted
+sample, so a percentile is the share of the represented population below
+that person. The ability estimates and their standard errors are
+person-level quantities and are never weighted.
 }
 \seealso{\code{\link{irtc}}, \code{\link{irtc_report}},
 \code{\link{irtc_results}}}

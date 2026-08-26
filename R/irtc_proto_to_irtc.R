@@ -14,8 +14,16 @@ irtc_proto_build_object <- function(z, dim_of, maxK, resp, CALL = NULL,
   I <- ncol(resp); N <- nrow(resp); D <- max(dim_of)
   a <- z$a; b <- z$b; Sigma <- z$Sigma
 
+  # item names carry through to every downstream table -- item_id in the
+  # cross-year linking workbook is keyed on them, so generic I1..In would make
+  # a multidimensional fit's parameter export unusable for linking
+  item_names <- colnames(resp)
+  if (is.null(item_names) || length(item_names) != I) {
+    item_names <- paste0("I", seq_len(I))
+  }
+
   # B slope array [I, maxK, D]: B[j,k,dim] = (k-1)*a_j (GPCM scoring; 2PL: k=2 -> a_j)
-  B <- array(0, dim = c(I, maxK, D))
+  B <- array(0, dim = c(I, maxK, D), dimnames = list(item_names, NULL, NULL))
   for (j in 1:I) for (k in 1:maxK) B[j, k, dim_of[j]] <- (k - 1) * a[j]
 
   # xsi intercepts: per item per step. xsi_{j,k} = a_j * cumsum(b_j)[k]  (k=1..maxK-1)
@@ -23,7 +31,8 @@ irtc_proto_build_object <- function(z, dim_of, maxK, resp, CALL = NULL,
   for (j in 1:I) {
     cb <- cumsum(b[j, ])
     for (k in seq_len(maxK - 1)) {
-      xsi_vec <- c(xsi_vec, a[j] * cb[k]); xsi_names <- c(xsi_names, paste0("I", j, "_Cat", k))
+      xsi_vec <- c(xsi_vec, a[j] * cb[k])
+      xsi_names <- c(xsi_names, paste0(item_names[j], "_Cat", k))
     }
   }
   xsi <- data.frame(xsi = xsi_vec, se.xsi = NA_real_, row.names = xsi_names)
@@ -45,8 +54,9 @@ irtc_proto_build_object <- function(z, dim_of, maxK, resp, CALL = NULL,
                2 * Npars * (Npars + 1) / (N - Npars - 1), GHP = NA_real_)
 
   # item summary table
-  item <- data.frame(item = paste0("I", 1:I), N = colSums(!is.na(resp)),
-                     M = colMeans(resp, na.rm = TRUE), slope = a)
+  item <- data.frame(item = item_names, N = colSums(!is.na(resp)),
+                     M = colMeans(resp, na.rm = TRUE), slope = a,
+                     row.names = NULL)
 
   # person (EAP) table. pid and pweight mirror the grid engine: the caller's
   # person identifiers and the case weights normalized to sum N.
@@ -66,7 +76,7 @@ irtc_proto_build_object <- function(z, dim_of, maxK, resp, CALL = NULL,
               ndim = D, deviance = dev, ic = ic, control = control,
               irtmodel = irtmodel, iter = z$iter, printxsi = FALSE, G = 1L,
               groups = 1L, formulaA = NULL, CALL = CALL, nnodes = NA, YSD = FALSE,
-              pid = pid, pweights = pweight)
+              pid = pid, pweights = pweight, resp = resp)
   class(res) <- "irtc"
   res
 }

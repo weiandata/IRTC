@@ -63,11 +63,21 @@ on_mismatch="warn"|"error") intersects Q items with the data items
 - persons (1 row per person, same order as input rows): person_id,
   n_answered, raw_score, eap[_dimD or _<dimname>], se[...], percentile[...],
   t_score[...] (headers use Q dimension names when a Q matrix was supplied).
-  person_id is the id passed to irtc(id=). percentile and t_score are always
-  unweighted, so they describe the respondents, not the weighted population.
+  person_id is the id passed to irtc(id=). percentile and t_score are
+  norm-referenced and follow the sampling weights; eap and se are person-level
+  and never weighted.
 - cleaning_log: step, code, message_en, message_zh
 - check_issues: code, severity (error|warning|info), scope, where,
   message_en, message_zh, fix_en, fix_zh
+
+## Answer keys and category coding
+
+irtc_read(recode=TRUE, default) renumbers integer response columns to
+consecutive scores from 0 (a file coded 1..5 becomes 0..4; logged as I124) and
+records the original categories in $recode_map. Write answer keys in the coding
+of the data file itself: irtc_score() translates key, partial answers and rules
+through that map. An answer absent from an item's observed responses raises
+W205 instead of silently scoring everyone wrong.
 
 ## Structured conditions
 
@@ -89,12 +99,13 @@ Typical automated repairs:
 ## Sampling weights
 
 irtc(weights=) forwards the weights to the MML estimation and to
-irtc_ctt() / irtc_itemfit() / irtc_quality() / irtc_param_table(), so item
-statistics, fit and quality ratings share one weighted population with the IRT
-parameters. Each of those functions also takes weights= directly and defaults
-to the weights stored on the model. Constant weights reproduce the unweighted
-results exactly. IRTC < 1.1.2 computed the classical statistics unweighted
-even when the IRT parameters were weighted.
+irtc_ctt() / irtc_itemfit() / irtc_quality() / irtc_param_table() /
+irtc_person_table() / irtc_results(), so item statistics, fit, quality ratings
+and the norm-referenced person columns (percentile, t_score) all share one
+weighted population with the IRT parameters. Each of those functions also takes
+weights= directly and defaults to the weights stored on the model. Constant
+weights reproduce the unweighted results exactly. IRTC < 1.1.2 computed all of
+them unweighted even when the IRT parameters were weighted.
 
 ## Interpretation defaults (irtc_quality_thresholds())
 

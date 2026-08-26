@@ -247,10 +247,13 @@ irtc_excel_quality <- function(mod, path, lang, resp)
 
 irtc_param_table <- function(mod, resp=NULL, weights=NULL)
 {
+    ## Fall back to the data and weights stored on the model, as
+    ## irtc_itemfit() and irtc_quality() do. Without the responses there is no
+    ## p_value and no item names, which would leave the cross-year linking
+    ## workbook keyed on generic I1..In.
+    if (is.null(resp)) resp <- mod$resp
     ## p_value sits in the same row as the IRT slope and difficulty, which are
-    ## estimated with the sampling weights, so it has to be weighted too; this
-    ## is the frozen schema used for cross-year linking. Defaults to the case
-    ## weights stored on the model.
+    ## estimated with the sampling weights, so it has to be weighted too.
     if (is.null(weights)) weights <- mod$pweights
     AXsi <- irtc_extract_axsi(mod)
     B <- mod$B
@@ -453,15 +456,18 @@ irtc_excel_parameters <- function(mod, path, lang, resp)
 ## 3. Person ability workbook (flat, paste-ready)
 ## ---------------------------------------------------------------------------
 
-irtc_person_table <- function(mod, lang=irtc_lang())
+irtc_person_table <- function(mod, lang=irtc_lang(), weights=NULL)
 {
     person <- mod$person
     eap <- irtc_extract_eap(mod)
     n_dim <- ncol(eap)
+    ## norm-referenced columns follow the weighted population
+    if (is.null(weights)) weights <- mod$pweights
+    pw <- irtc_prep_case_weights(weights, nrow(eap))
     pid <- if (!is.null(mod$pid)) mod$pid else person$pid
     if (is.null(pid)) pid <- seq_len(nrow(eap))
 
-    out <- data.frame(pid=as.character(pid), stringsAsFactors=FALSE)
+    out <- data.frame(pid=irtc_format_id(pid), stringsAsFactors=FALSE)
     if (!is.null(mod$resp)) {
         out[[irtc_tr("n_answered", "\u4f5c\u7b54\u9898\u6570", lang)]] <-
             rowSums(!is.na(mod$resp))
@@ -489,13 +495,10 @@ irtc_person_table <- function(mod, lang=irtc_lang())
             out[[paste0(irtc_tr("SE", "\u6807\u51c6\u8bef", lang), dim_suffix)]] <-
                 round(person[[sd_cols[d]]], 4)
         }
-        pct <- round(100 * (rank(v, na.last="keep") - 0.5) /
-            sum(!is.na(v)), 1)
         out[[paste0(irtc_tr("percentile", "\u767e\u5206\u4f4d", lang),
-            dim_suffix)]] <- pct
-        z <- (v - mean(v, na.rm=TRUE)) / stats::sd(v, na.rm=TRUE)
+            dim_suffix)]] <- round(irtc_weighted_percentile(v, pw), 1)
         out[[paste0(irtc_tr("T_score", "T\u5206\u6570", lang), dim_suffix)]] <-
-            round(50 + 10 * z, 1)
+            round(irtc_weighted_tscore(v, pw), 1)
     }
     names(out)[1L] <- irtc_tr("person_id", "\u4e2a\u6848ID", lang)
     out

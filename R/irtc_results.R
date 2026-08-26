@@ -12,7 +12,7 @@
 
 irtc_results_schema_version <- "1.2"
 
-irtc_results <- function(mod, resp=NULL)
+irtc_results <- function(mod, resp=NULL, weights=NULL)
 {
     if (!inherits(mod, "irtc")) {
         irtc_stop(code="E401",
@@ -105,11 +105,16 @@ irtc_results <- function(mod, resp=NULL)
     }
 
     ## --- persons ----------------------------------------------------------------
+    ## Norm-referenced columns (percentile, T score) are computed on the
+    ## weighted sample, so they describe the population the weights represent
+    ## rather than the achieved sample.
+    if (is.null(weights)) weights <- mod$pweights
     persons <- tryCatch({
         eap <- irtc_extract_eap(mod)
         n_dim <- ncol(eap)
+        pw <- irtc_prep_case_weights(weights, nrow(eap))
         pid <- if (!is.null(mod$pid)) mod$pid else seq_len(nrow(eap))
-        p <- data.frame(person_id=as.character(pid),
+        p <- data.frame(person_id=irtc_format_id(pid),
             stringsAsFactors=FALSE)
         if (!is.null(resp)) p$n_answered <- rowSums(!is.na(resp))
         if (!is.null(mod$person$score)) p$raw_score <- mod$person$score
@@ -124,10 +129,10 @@ irtc_results <- function(mod, resp=NULL)
             if (length(sd_cols) >= d) {
                 p[[paste0("se", sfx)]] <- round(mod$person[[sd_cols[d]]], 4)
             }
-            p[[paste0("percentile", sfx)]] <- round(100 *
-                (rank(v, na.last="keep") - 0.5) / sum(!is.na(v)), 1)
-            z <- (v - mean(v, na.rm=TRUE)) / stats::sd(v, na.rm=TRUE)
-            p[[paste0("t_score", sfx)]] <- round(50 + 10 * z, 1)
+            p[[paste0("percentile", sfx)]] <-
+                round(irtc_weighted_percentile(v, pw), 1)
+            p[[paste0("t_score", sfx)]] <-
+                round(irtc_weighted_tscore(v, pw), 1)
         }
         p
     }, error=function(e) NULL)

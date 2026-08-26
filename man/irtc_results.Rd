@@ -26,16 +26,19 @@ dimension names when available), \code{cleaning_log} and
 \code{\link{irtc}}). Schema 1.2 is additive over 1.1: existing column
 names and meanings are unchanged.
 
-Item statistics honour the sampling weights given to \code{\link{irtc}},
-so they share one population with the IRT parameters. The person-level
-\code{percentile} and \code{t_score} columns are always unweighted and
-describe the respondents rather than the weighted population. Items declared in the Q matrix but not
+Sampling weights given to \code{\link{irtc}} are honoured throughout: the
+item statistics share one population with the IRT parameters, and the
+norm-referenced person columns \code{percentile} and \code{t_score} are
+computed on the weighted sample, so a percentile is the share of the
+represented population below that person. Pass \code{weights} to override
+the weights stored on the model. The ability estimates and their standard
+errors are person-level quantities and are never weighted. Items declared in the Q matrix but not
 estimated keep a row with \code{status} \code{"dropped_no_response"} or
 \code{"declared_not_estimated"}. See the package file
 \code{inst/llms.txt} for the full schema reference.
 }
 \usage{
-irtc_results(mod, resp = NULL)
+irtc_results(mod, resp = NULL, weights = NULL)
 
 irtc_json(mod, file = NULL, resp = NULL, pretty = TRUE)
 
@@ -46,6 +49,10 @@ irtc_json(mod, file = NULL, resp = NULL, pretty = TRUE)
     accepts an \code{irtc_results} object.}
 \item{resp}{The response data; only needed when the model object does not
     store it (streaming engine).}
+\item{weights}{Optional case (sampling) weights, one per person, used for
+    the norm-referenced \code{percentile} and \code{t_score} columns and
+    for the item statistics. Defaults to the case weights stored on the
+    model; constant weights reproduce the unweighted values exactly.}
 \item{file}{Optional path; when given, the JSON is written there (UTF-8)
     and the path is returned invisibly.}
 \item{pretty}{Logical: pretty-print the JSON?}

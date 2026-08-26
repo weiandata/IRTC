@@ -66,15 +66,57 @@ reported numbers; see "Numerical changes" below. The `irtc()` / `irtc.mml()` /
   release one item's pass rate differed by 7.8 percentage points between the
   two bases, enough to change its difficulty label.
 
+* The norm-referenced person columns `percentile` and `t_score`, in
+  `irtc_results()` and the ability workbook of `irtc_excel()`, were also
+  computed unweighted. A percentile now reports the share of the represented
+  population below that person, not the share of the achieved sample. The
+  ability estimates and their standard errors are person-level quantities and
+  remain unweighted.
+
+Found while validating the whole pipeline against the raw 48 MB SPSS file from
+the same survey:
+
+* An answer key was applied to the wrong option whenever `irtc_read()` had
+  renumbered an item's categories. Reading a file whose responses are coded
+  1..5 recodes them to 0..4 (logged as `I124`); `irtc_score()` then matched a
+  key of `c(Q1 = 2)` against the *recoded* values, so it scored whichever
+  option had become 2 -- silently, with a plausible-looking 0/1 matrix as the
+  result. `irtc_read()` now remembers the original categories in
+  `recode_map`, and `irtc_score()` translates the key, the partial-answer
+  lists and a `rules` table through it. Answer keys are written in the coding
+  of the user's own data file, which is the only coding they can see.
+
+* An answer that never appears among an item's responses is now reported
+  (code `W205`) instead of scoring every respondent wrong. This catches a
+  mistyped key as well as an option nobody chose.
+
+* A numeric person ID could be written in scientific notation. `266000000`
+  became `"2.66e+08"` in `irtc_results()$persons$person_id` and the ability
+  workbook, corrupting the key used to join results back to the sample. Whole
+  numbers are now always formatted as plain digits. (One respondent in 85,036
+  hit this in the validation data.)
+
+* A streaming-engine fit did not store its response data or its item names, so
+  the item tables were keyed on generic `I1`..`In` and `p_value` came out `NA`
+  -- in the very workbook documented for cross-year linking, where `item_id`
+  is the join key. The fit now carries both, and `irtc_quality()`,
+  `irtc_itemfit()`, `irtc_results()` and `irtc_excel()` work on a
+  multidimensional model without passing `resp=` back in.
+
+* `irtc_param_table()` did not fall back to the model's stored response data
+  the way `irtc_itemfit()` and `irtc_quality()` do, so `irtc_excel(mod)`
+  produced a parameter workbook with no `p_value`.
+
 ## New features
 
-* `irtc_ctt()`, `irtc_itemfit()`, `irtc_quality()` and `irtc_param_table()`
-  gain a `weights=` argument. `irtc()` passes the sampling weights it already
-  forwards to the estimation, so the whole results table now rests on one
-  population. `irtc_itemfit()`, `irtc_quality()` and `irtc_param_table()`
-  default to the case weights stored on the model. Constant weights reproduce
-  the unweighted statistics exactly, so unweighted analyses are unaffected.
-  `irtc_ctt()` reports an `N_weighted` column and a `weighted` flag.
+* `irtc_ctt()`, `irtc_itemfit()`, `irtc_quality()`, `irtc_param_table()`,
+  `irtc_person_table()` and `irtc_results()` gain a `weights=` argument.
+  `irtc()` passes the sampling weights it already forwards to the estimation,
+  so the whole results table now rests on one population. All but
+  `irtc_ctt()` default to the case weights stored on the model. Constant
+  weights reproduce the unweighted statistics exactly, ties included, so
+  unweighted analyses are unaffected. `irtc_ctt()` reports an `N_weighted`
+  column and a `weighted` flag.
 
 * The streaming engine now returns posterior standard errors. The person
   table gains `SD.EAP.Dim1`, ..., so `irtc_results()` and `irtc_excel()`
@@ -111,8 +153,10 @@ changes is what gets reported.
   that prompted this, the three collapsed dimensions reported 0.63 where the
   equivalent unidimensional model reported 0.72; they now agree.
 
-* Weighted analyses see the classical statistics, item fit and quality
-  ratings move to the weighted basis, as described above.
+* Weighted analyses see the classical statistics, item fit, quality ratings
+  and the norm-referenced person columns move to the weighted basis, as
+  described above. Published percentile or T-score norms produced with an
+  earlier version from a weighted analysis will shift.
 
 ## Documentation
 
@@ -124,9 +168,8 @@ changes is what gets reported.
 * `?irtc_itemfit` states that the residuals are evaluated at the EAP person
   estimates, for comparison against software that uses WLE estimates.
 
-* `?irtc_excel` notes that the person-level `percentile` and `t_score`
-  columns are always computed on the unweighted sample, so they describe the
-  respondents rather than the weighted population.
+* `?irtc_excel` and `?irtc_results` describe which columns follow the
+  sampling weights and which are person-level and never weighted.
 
 * `inst/llms.txt` gains a section on how the sampling weights propagate.
 

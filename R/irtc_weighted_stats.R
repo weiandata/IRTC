@@ -104,3 +104,65 @@ irtc_weighted_var <- function(x, w)
 {
     irtc_weighted_cov2(x, x, w)
 }
+
+## Weighted percentile rank, in percent: the share of the weighted population
+## below each value, counting ties at half weight. This is the weighted
+## analogue of (rank - 0.5) / n and reduces to it exactly under constant
+## weights, ties included. NA values stay NA.
+irtc_weighted_percentile <- function(v, w)
+{
+    out <- rep(NA_real_, length(v))
+    use <- !is.na(v)
+    if (!any(use)) {
+        return(out)
+    }
+    vv <- v[use]
+    ww <- w[use]
+    total <- sum(ww)
+    if (!is.finite(total) || total <= 0) {
+        return(out)
+    }
+    ## cumulative weight strictly below each distinct value, plus half the
+    ## weight sitting exactly on it
+    ord <- order(vv)
+    sorted_v <- vv[ord]
+    sorted_w <- ww[ord]
+    cum_before <- c(0, cumsum(sorted_w)[-length(sorted_w)])
+    ## collapse ties: every tied observation shares the group's below-weight
+    grp <- match(sorted_v, sorted_v)          # first index of each tied run
+    below <- cum_before[grp]
+    tie_w <- as.numeric(tapply(sorted_w, grp, sum))[match(grp, sort(unique(grp)))]
+    pct <- 100 * (below + 0.5 * tie_w) / total
+    out[use][ord] <- pct
+    out
+}
+
+## Weighted standard deviation (non-missing entries).
+irtc_weighted_sd <- function(x, w)
+{
+    v <- irtc_weighted_cov2(x, x, w)
+    if (!is.finite(v) || v < 0) NA_real_ else sqrt(v)
+}
+
+## Weighted T score: mean 50, SD 10 on the weighted sample.
+irtc_weighted_tscore <- function(v, w)
+{
+    m <- irtc_weighted_mean(v, w)
+    s <- irtc_weighted_sd(v, w)
+    if (!is.finite(s) || s <= 0) {
+        return(rep(NA_real_, length(v)))
+    }
+    50 + 10 * (v - m) / s
+}
+
+## Person identifiers as text. A numeric ID read from SPSS or Excel arrives as
+## a double, and as.character() would render a long one in scientific notation
+## ("1e+15"), silently corrupting the key used to join results back to the
+## sample. Format whole numbers as plain digits instead.
+irtc_format_id <- function(pid)
+{
+    if (is.numeric(pid) && all(is.na(pid) | pid == round(pid))) {
+        return(format(pid, scientific=FALSE, trim=TRUE, justify="none"))
+    }
+    as.character(pid)
+}
