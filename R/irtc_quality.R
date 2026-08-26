@@ -22,7 +22,7 @@ irtc_quality_thresholds <- function()
     )
 }
 
-irtc_quality <- function(mod, resp=NULL, thresholds=NULL)
+irtc_quality <- function(mod, resp=NULL, thresholds=NULL, weights=NULL)
 {
     if (!inherits(mod, "irtc")) {
         irtc_stop(code="E401",
@@ -49,8 +49,11 @@ irtc_quality <- function(mod, resp=NULL, thresholds=NULL)
     }
     resp <- as.data.frame(resp, stringsAsFactors=FALSE)
 
-    ctt <- irtc_ctt(resp)
-    fit <- irtc_itemfit(mod, resp=resp)
+    ## The rating combines classical and IRT evidence, so both halves have to
+    ## be computed on the same (weighted) population.
+    if (is.null(weights)) weights <- mod$pweights
+    ctt <- irtc_ctt(resp, weights=weights)
+    fit <- irtc_itemfit(mod, resp=resp, weights=weights)
     n_items <- nrow(ctt$items)
 
     rating <- character(n_items)

@@ -25,7 +25,7 @@ test_that("irtc_param_table has the frozen linking schema", {
     expect_equal(colnames(tbl)[1:9],
         c("schema_version", "analysis_id", "model", "item_id", "n_obs",
           "p_value", "slope_a", "difficulty_b", "se_b"))
-    expect_equal(tbl$schema_version, rep("1.0", 6L))
+    expect_equal(tbl$schema_version, rep("1.1", 6L))
     expect_equal(tbl$item_id, paste0("I", 1:6))
     ## difficulty should increase with the generating b parameters
     expect_true(tbl$difficulty_b[6L] > tbl$difficulty_b[1L])

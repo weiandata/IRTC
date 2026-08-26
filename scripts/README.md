@@ -1,8 +1,19 @@
 # Scripts
 
+- `verify-release-1.1.2.R` is the release gate. Run it from the repository
+  root before every submission: `Rscript scripts/verify-release-1.1.2.R`. It
+  runs the test suite, enforces coverage targets, builds the tarball, runs
+  `R CMD check --as-cran` **with the PDF manual** (never `--no-manual` —
+  skipping it is what let the LaTeX failure that got 1.1.0 rejected pass
+  unnoticed locally), asserts the built manual contains no CJK characters,
+  smoke-tests the whole workflow, and re-checks each defect fixed in 1.1.2.
+  It ends by reminding you of the one thing it cannot do: a win-builder
+  R-devel run, which is the only flavor that catches released-R-only wording
+  assumptions. `verify-release-1.1.R` is its superseded predecessor, kept for
+  the record.
 - `build-manual-pdf.sh` rebuilds the designed Chinese user-manual PDF
-  (`docs/manuals/IRTC使用手册_中文_V1.1.1.pdf`) from
-  `docs/manuals/IRTC手册-中文-V1.1.1.md` using Pandoc and XeLaTeX. The design
+  (`docs/manuals/IRTC使用手册_中文_V1.1.2.pdf`) from
+  `docs/manuals/IRTC手册-中文-V1.1.2.md` using Pandoc and XeLaTeX. The design
   lives in `scripts/manual-pdf/`: `preprocess.py` (Markdown to book
   structure), `style.tex` (palette, fonts, chapter openers, callouts, code
   blocks, tables), `front.tex` (cover, colophon, preface), `back.tex` (end
@@ -10,7 +21,7 @@
   the macOS system fonts Songti SC, PingFang SC, Palatino, Avenir Next and
   Menlo.
 - `build-workload-pdf.sh` builds the 5-page Chinese workload statement
-  (`docs/IRTC工作量说明_中文_V1.1.1.pdf`) from
+  (`docs/IRTC工作量说明_中文_V1.1.2.pdf`) from
   `scripts/manual-pdf/workload.tex`, which shares the manual's design.
 
 Use this directory only for small utility scripts that support repository tasks
@@ -26,6 +37,9 @@ All scripts are run from the repository root, for example
 
 ## Contents
 
+- `verify-release-1.1.2.R` — the release gate; see above.
+- `verify-release-1.1.R` — superseded; kept as the record of the 1.1.0
+  verification and of why `--no-manual` must not be used.
 - `benchmark.R` — timing benchmark of the estimation engine on the bundled
   simulated Rasch data.
 - `gen_reference.R` — regenerates regression fixtures from IRTC's estimation

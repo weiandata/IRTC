@@ -55,7 +55,7 @@ irtc_proto_estep_at <- function(resp, dim_of, fit, Q, maxK, keep = NULL) {
   gridx <- matrix(x[gridcoord + 1L], nrow(gridcoord), D)
   dimj0 <- as.integer(dim_of - 1L)
   Sig <- if (is.list(fit$Sigma)) fit$Sigma[[1]] else fit$Sigma
-  gw <- .mvn_density(gridx, Sig)
+  gw <- .mvn_grid_mass(gridx, Sig)   # probability mass, matching the engine
   b <- if (is.matrix(fit$b)) fit$b else matrix(fit$b, I, maxK - 1)
   probs <- numeric(I * maxK * Q)
   for (j in 1:I) {

@@ -45,6 +45,16 @@ irtc_score(resp, key = NULL, rules = NULL, na_as_wrong = FALSE,
     \code{NA}? (Key scoring only.)}
 \item{sheet}{Excel sheet of the key / rules file (number or name).}
 }
+\section{Answer coding}{
+Write the key in the coding of your own data file. \code{\link{irtc_read}}
+may renumber an item's categories to consecutive scores starting at 0 (a file
+coded 1..5 becomes 0..4, logged as \code{I124}); it records the original
+categories, and \code{irtc_score} translates the key, the partial answers and
+a \code{rules} table through that record. An answer that never occurs among
+an item's responses is reported with a warning (code \code{W205}) rather than
+scoring every respondent wrong -- which catches a mistyped key as well as an
+option nobody chose.
+}
 \value{
 The same type as the input: an \code{irtc_data} object with scored
 \code{resp} and an extended log, or a data frame with a

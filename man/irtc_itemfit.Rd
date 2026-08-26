@@ -6,12 +6,15 @@
 \title{Item Fit Statistics (Infit and Outfit)}
 \description{
 Residual-based item fit for a fitted model: infit and outfit mean squares
-with Wilson-Hilferty \emph{t} statistics, evaluated at the EAP person
-estimates. Values near 1 indicate good fit; the conventional normal range
-is 0.7 to 1.3.
+with Wilson-Hilferty \emph{t} statistics. Values near 1 indicate good fit;
+the conventional normal range is 0.7 to 1.3.
+
+The residuals are evaluated at the \emph{EAP} (expected a posteriori)
+person estimates -- worth knowing when comparing the numbers against
+software that uses WLE estimates instead.
 }
 \usage{
-irtc_itemfit(mod, resp = NULL)
+irtc_itemfit(mod, resp = NULL, weights = NULL)
 
 \method{print}{irtc_itemfit}(x, lang = irtc_lang(), \dots)
 }
@@ -19,6 +22,11 @@ irtc_itemfit(mod, resp = NULL)
 \item{mod}{A fitted \code{irtc} model object.}
 \item{resp}{The response data; only needed when the model object does not
     store it (streaming engine).}
+\item{weights}{Optional case (sampling) weights, one per person: each
+    person then contributes \code{w_i} standardised residuals rather than
+    one, so the fit statistics rest on the same weighted population as the
+    item parameters they judge. Defaults to the case weights stored on the
+    model; constant weights reproduce the unweighted statistics exactly.}
 \item{x}{An \code{irtc_itemfit} object.}
 \item{lang}{Output language, \code{"zh"} or \code{"en"}.}
 \item{\dots}{Ignored.}

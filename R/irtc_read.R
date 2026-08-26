@@ -95,11 +95,13 @@ irtc_read <- function(x, sheet=1, id=NULL, weights=NULL,
     log <- w_result$log
 
     ## --- 3. Cleaning -----------------------------------------------------
+    recode_map <- NULL
     if (clean) {
         cl <- irtc_clean_resp(raw, missing_codes=missing_codes,
             na_strings=na_strings, recode=recode, log=log)
         raw <- cl$resp
         log <- cl$log
+        recode_map <- cl$recode_map
         ## keep the person ID and weights aligned when empty rows dropped
         if (!is.null(pid) && !is.null(cl$rows_kept)) {
             pid <- pid[cl$rows_kept]
@@ -110,7 +112,8 @@ irtc_read <- function(x, sheet=1, id=NULL, weights=NULL,
     }
 
     out <- list(resp=raw, pid=pid, weights=wgt, dropped=dropped, log=log,
-        source=source_label, clean=clean)
+        source=source_label, clean=clean, recode_map=recode_map,
+        package_version=as.character(utils::packageVersion("IRTC")))
     class(out) <- "irtc_data"
     if (verbose) {
         print(out)
@@ -241,8 +244,10 @@ irtc_detect_delimiter <- function(lines)
 
 irtc_id_name_pool <- function()
 {
-    c("id", "pid", "sid", "uid", "person", "personid", "person_id",
+    c("id", "pid", "sid", "uid", "rid", "person", "personid", "person_id",
       "student", "studentid", "student_id", "subject", "subjectid",
+      "respondent", "respondentid", "respondent_id",
+      "record", "recordid", "record_id",
       "case", "caseid", "name", "\u7f16\u53f7", "\u5b66\u53f7", "\u59d3\u540d", "\u8003\u53f7", "\u8003\u751f\u53f7",
       "\u51c6\u8003\u8bc1", "\u51c6\u8003\u8bc1\u53f7", "\u5e8f\u53f7", "\u5de5\u53f7", "\u88ab\u8bd5", "\u88ab\u8bd5\u7f16\u53f7")
 }
@@ -505,6 +510,11 @@ irtc_clean_resp <- function(resp, missing_codes=c(-9, -99, 99, 999),
     }
 
     ## 3d. category recoding for integer response columns
+    ## The original categories are kept in 'recode_map' so that an answer key
+    ## can still be written in the coding the user sees in their own file:
+    ## irtc_score() translates the key through this map. Without it, a key of
+    ## c(Q1 = 2) silently scores whichever option was recoded to 2.
+    recode_map <- list()
     if (recode) {
         for (j in seq_along(resp)) {
             col <- resp[[j]]
@@ -518,6 +528,7 @@ irtc_clean_resp <- function(resp, missing_codes=c(-9, -99, 99, 999),
             mapped <- match(col, uv) - 1L
             mapped[is.na(col)] <- NA_integer_
             resp[[j]] <- as.numeric(mapped)
+            recode_map[[colnames(resp)[j]]] <- uv
             log <- irtc_log_add(log, "clean", "I124",
                 en=paste0("Recoded item '", colnames(resp)[j],
                     "' categories (", paste(uv, collapse=","),
@@ -528,7 +539,8 @@ irtc_clean_resp <- function(resp, missing_codes=c(-9, -99, 99, 999),
         }
     }
 
-    list(resp=resp, log=log, rows_kept=rows_kept)
+    list(resp=resp, log=log, rows_kept=rows_kept,
+        recode_map=if (length(recode_map) > 0L) recode_map else NULL)
 }
 
 ## --------------------------------------------------------------------------

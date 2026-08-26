@@ -9,8 +9,13 @@
 ## Wilson-Hilferty t statistics, evaluated at the EAP person estimates.
 ## Works for both the grid and the streaming engine (AXsi is reconstructed
 ## from the step parameters when the streaming engine did not store it).
+##
+## 'weights' are case weights: each person contributes w_i standardized
+## residuals rather than one, so the fit statistics rest on the same weighted
+## population as the item parameters they are judging. When omitted they default
+## to the case weights stored on the model, and then to 1.
 
-irtc_itemfit <- function(mod, resp=NULL)
+irtc_itemfit <- function(mod, resp=NULL, weights=NULL)
 {
     if (!inherits(mod, "irtc")) {
         irtc_stop(code="E401",
@@ -43,6 +48,10 @@ irtc_itemfit <- function(mod, resp=NULL)
             fix_zh="\u8bf7\u4f20\u5165\u4e0e\u6a21\u578b\u4f30\u8ba1\u65f6\u76f8\u540c\u7684\u6570\u636e\u3002",
             class="irtc_error_input")
     }
+    ## after the shape checks, so a mismatched 'resp' reports the shape problem
+    ## rather than a downstream weight-length error
+    if (is.null(weights)) weights <- mod$pweights
+    w_all <- irtc_prep_case_weights(weights, nrow(resp))
     AXsi <- irtc_extract_axsi(mod)
     B <- mod$B
     n_items <- dim(B)[1L]
@@ -84,13 +93,14 @@ irtc_itemfit <- function(mod, resp=NULL)
         ## kurtosis term C = E[(X - E)^4]
         e3 <- as.vector(prob %*% scores^3)
         cvar <- e4 - 4 * e1 * e3 + 6 * e1^2 * e2 - 3 * e1^4
+        wt <- w_all[use]
         z2 <- (obs[use] - e1)^2 / w
-        n_use <- sum(use)
-        outfit[j] <- mean(z2)
-        infit[j] <- sum((obs[use] - e1)^2) / sum(w)
+        n_use <- sum(wt)
+        outfit[j] <- sum(wt * z2) / n_use
+        infit[j] <- sum(wt * (obs[use] - e1)^2) / sum(wt * w)
         ## Wilson-Hilferty transformation to approximate t statistics
-        q2_out <- sum(cvar / w^2 - 1) / n_use^2
-        q2_in <- sum(cvar - w^2) / sum(w)^2
+        q2_out <- sum(wt * (cvar / w^2 - 1)) / n_use^2
+        q2_in <- sum(wt * (cvar - w^2)) / sum(wt * w)^2
         if (is.finite(q2_out) && q2_out > 0) {
             q <- sqrt(q2_out)
             outfit_t[j] <- (outfit[j]^(1 / 3) - 1) * (3 / q) + (q / 3)
@@ -112,6 +122,34 @@ irtc_itemfit <- function(mod, resp=NULL)
     )
     class(out) <- c("irtc_itemfit", "data.frame")
     out
+}
+
+## The latent dimension each item loads on, and the slope on that dimension.
+## B is the [item, category, dimension] slope array; for a between-item (simple
+## structure) multidimensional model each item has exactly one non-zero
+## dimension, and reading B[, 2, 1] unconditionally -- as the parameter tables
+## used to -- reports slope 0 for every item that does not load on dimension 1.
+## Within-item items (loading on several dimensions at once) have no single
+## slope; those get the sum of their loadings and are flagged via n_loadings, so
+## a caller doing cross-year linking can see that the value is a composite.
+irtc_item_loading <- function(B)
+{
+    n_items <- dim(B)[1L]
+    n_dim <- dim(B)[3L]
+    if (is.na(n_dim) || n_dim < 1L) {
+        return(list(slope=rep(NA_real_, n_items), dim=rep(NA_integer_, n_items),
+            n_loadings=rep(NA_integer_, n_items)))
+    }
+    ## the discrimination lives in the first scored category (k = 2)
+    loadings <- matrix(B[, 2L, ], nrow=n_items, ncol=n_dim)
+    nonzero <- !is.na(loadings) & loadings != 0
+    n_loadings <- as.integer(rowSums(nonzero))
+    which_dim <- apply(nonzero, 1L, function(z)
+        if (any(z)) which(z)[1L] else NA_integer_)
+    slope <- rowSums(loadings * nonzero, na.rm=TRUE)
+    slope[n_loadings == 0L] <- NA_real_
+    list(slope=as.numeric(slope), dim=as.integer(which_dim),
+        n_loadings=n_loadings)
 }
 
 ## Dimension names for person-level output. Uses the Q-matrix column

@@ -66,6 +66,13 @@ An object of class \code{irtc_data}: a list with components \code{resp}
 data frame with columns \code{step}, \code{code}, \code{message_en},
 \code{message_zh}) and \code{source}.
 }
+\section{Category recoding}{
+With \code{recode = TRUE} (the default) integer response columns are
+renumbered to consecutive scores starting at 0, which is what the estimation
+needs. The original categories are kept in the \code{recode_map} component so
+that an answer key written in the file's own coding still applies; see
+\code{\link{irtc_score}}.
+}
 \seealso{\code{\link{irtc}}, \code{\link{irtc_score}},
 \code{\link{irtc_check_data}}}
 \examples{

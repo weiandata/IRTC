@@ -23,7 +23,7 @@
 \usetikzlibrary{arrows.meta}
 
 \hypersetup{
-  pdftitle={IRTC 工作量说明（版本 1.1.1）},
+  pdftitle={IRTC 工作量说明（版本 1.1.2）},
   pdfauthor={马崑翔 Kunxiang Ma},
   pdfsubject={IRTC 项目反应理论分析包 —— 代码量、文字量、技术路径与实现效果},
   pdfcreator={XeLaTeX},
@@ -31,7 +31,7 @@
 
 % 页眉页脚：本文件不使用手册的页眉文案
 \fancyhead[R]{\LightFont\fontsize{8.5}{10}\selectfont\color{IRTCslate}%
-  IRTC 工作量说明 · V1.1.1}
+  IRTC 工作量说明 · V1.1.2}
 
 % 分节页：与手册章首页同一形制
 \newcommand{\WLsection}[3]{%
@@ -90,7 +90,7 @@
 {\color{IRTCgold}\rule{3.2cm}{1.6pt}}\par
 \vspace{0.42cm}
 {\LightFont\fontsize{11.5}{18}\selectfont\color{IRTCgoldsoft}%
- 代码量 · 文字量 · 技术路径 · 实现效果 \quad|\quad 版本 1.1.1，已发布于 CRAN}\par
+ 代码量 · 文字量 · 技术路径 · 实现效果 \quad|\quad 版本 1.1.2，已发布于 CRAN}\par
 
 \vspace{0.75cm}
 {\HeadFont\fontsize{12.5}{17}\selectfont\color{white}%
@@ -129,7 +129,7 @@ Word/HTML 报告，不用再自己排版。\par
  Kunxiang Ma\par}
 \vspace{0.4cm}
 {\LightFont\fontsize{10.5}{16}\selectfont\color{white}%
- 软件版本 1.1.1（2026-07-17）\quad · \quad 本说明 2026 年 8 月\par}
+ 软件版本 1.1.2（2026-08-27）\quad · \quad 本说明 2026 年 8 月\par}
 \vspace{0.7cm}
 
 % =====================================================================
@@ -137,8 +137,8 @@ Word/HTML 报告，不用再自己排版。\par
 % =====================================================================
 \WLsection{01}{第一部分}{代码量}
 
-以仓库当前（版本 1.1.1）内容统计，项目共 \textbf{247 个源文件、19{,}874 行}。
-其中真正的实现代码（R 与 C++）约 1.18 万行，自动化测试 5{,}282 行，
+以仓库当前（版本 1.1.2）内容统计，项目共 \textbf{255 个源文件、21{,}380 行}。
+其中真正的实现代码（R 与 C++）约 1.24 万行，自动化测试 5{,}699 行，
 测试与实现的行数比约为 \textbf{1 : 2.2}。
 
 \vspace{2pt}
@@ -150,31 +150,31 @@ Word/HTML 报告，不用再自己排版。\par
 \textcolor{IRTCink}{\bfseries 行数} &
 \textcolor{IRTCink}{\bfseries 内容} \\
 \midrule
-\strut R 源码 \IRTColdtexttt{R/} & 131 & 10{,}579 &
+\strut R 源码 \IRTColdtexttt{R/} & 133 & 11{,}144 &
 估计层、数据层、统计层、输出层、AI 接口与结构化报错 \\
-\strut C++ 源码 \IRTColdtexttt{src/} & 11 & 1{,}255 &
+\strut C++ 源码 \IRTColdtexttt{src/} & 13 & 1{,}282 &
 并行 E 步、概率与充分统计量、2PL/GPCM 求解、流式引擎 \\
-\strut 自动化测试 \IRTColdtexttt{tests/} & 64 & 5{,}282 &
-309 个测试块、1{,}087 处断言 \\
-\strut 帮助文档 \IRTColdtexttt{man/} & 21 & 1{,}171 &
+\strut 自动化测试 \IRTColdtexttt{tests/} & 64 & 5{,}699 &
+340 个测试块、1{,}298 处断言 \\
+\strut 帮助文档 \IRTColdtexttt{man/} & 22 & 1{,}345 &
 每个导出函数的 R 标准帮助页与示例 \\
-\strut 机器接口 \IRTColdtexttt{inst/} & 4 & 316 &
-\IRTColdtexttt{llms.txt} API 摘要、版权声明等 \\
-\strut 构建与排版 \IRTColdtexttt{scripts/} & 15 & 1{,}204 &
+\strut 机器接口 \IRTColdtexttt{inst/} & 2 & 199 &
+\IRTColdtexttt{llms.txt} API 摘要、版权声明 \\
+\strut 构建与排版 \IRTColdtexttt{scripts/} & 19 & 1{,}625 &
 发布校验、基准测试、手册 PDF 设计与生成 \\
-\strut 示例 \IRTColdtexttt{examples/} & 1 & 67 &
+\strut 示例 \IRTColdtexttt{examples/} & 2 & 86 &
 端到端使用示例 \\
 \midrule
-\strut\textbf{合计} & \textbf{247} & \textbf{19{,}874} & \\
+\strut\textbf{合计} & \textbf{255} & \textbf{21{,}380} & \\
 \bottomrule
 \end{tabular}\par}
 
 \vspace{10pt}
-\textbf{去掉空行与纯注释后的有效代码行}：R 层 8{,}479 行、C++ 层 952 行、
-测试 4{,}420 行、帮助文档 1{,}063 行。
+\textbf{去掉空行与纯注释后的有效代码行}：R 层 8{,}978 行、C++ 层 964 行、
+测试 4{,}805 行、帮助文档 1{,}243 行。
 
 \vspace{4pt}
-\textbf{对外接口规模}：20 个导出函数 + 12 个 S3 方法（\IRTColdtexttt{summary}、
+\textbf{对外接口规模}：21 个导出函数 + 13 个 S3 方法（\IRTColdtexttt{summary}、
 \IRTColdtexttt{print}、\IRTColdtexttt{plot}、\IRTColdtexttt{anova}、
 \IRTColdtexttt{logLik} 等），17 个注册的 C++ 原生符号，3 个内置仿真数据集
 （\IRTColdtexttt{data.sim.rasch}、\IRTColdtexttt{data.gpcm}、\IRTColdtexttt{data.mc}）。
@@ -224,9 +224,9 @@ R 帮助页另有 1{,}171 行。
 已计入前一页的代码行数。
 
 \vspace{4pt}
-本次 1.1.1 正式发布还新增了中文手册的 PDF 排版工程（封面、引言、目录、
-章节页、尾页与配色体系），共 5 个设计文件，
-已计入 \IRTColdtexttt{scripts/} 的行数中。
+中文手册的 PDF 排版工程（封面、引言、目录、章节页、尾页与配色体系）共 6 个设计
+文件，已计入 \IRTColdtexttt{scripts/} 的行数中。1.1.2 另增一份《缺陷处置记录》，
+逐条回应一次真实生产使用中提出的技术记录。
 
 \WLnote{\textbf{为什么写这么多字？}\quad
 本项目的目标读者里有相当一部分\textbf{没有编程和统计基础}。
@@ -302,12 +302,17 @@ R 帮助页另有 1{,}171 行。
 \textcolor{IRTCink}{\bfseries 已达到的结果} \\
 \midrule
 \strut 发布状态 &
-版本 1.1.1 已通过 CRAN 审核并上架，使用者一条
+已通过 CRAN 审核并上架，使用者一条
 \IRTColdtexttt{install.packages("IRTC")} 即可安装；Windows 与 macOS 直接获得
 编译好的二进制包 \\
 \strut 质量验证 &
-\IRTColdtexttt{R CMD check -{}-as-cran} 0 错误 0 警告；1{,}191 项自动化测试全部通过；
-整体代码覆盖率 96.0\%，关键模块 ≥ 95\%；macOS / Windows / Linux 三平台持续集成 \\
+\IRTColdtexttt{R CMD check -{}-as-cran} 0 错误 0 警告 0 提示（含 PDF 手册构建）；
+1{,}298 项自动化测试全部通过；整体代码覆盖率 96.0\%，关键模块 ≥ 95\%；
+macOS / Windows / Linux 三平台持续集成 \\
+\strut 生产验证 &
+1.1.2 经一次 85{,}035 人的全国性调查实际使用检验，并用其原始 SPSS 文件
+（85{,}281 行 × 243 列）做全链路复核：按答案键计分与原系统 85 万个计分单元
+逐格一致，估计结果与独立计算的基线逐位吻合 \\
 \strut 规模与性能 &
 百万样本、多维 GPCM 原型测试中，流式引擎约 99 秒/次迭代，峰值内存约 2.4 GB；
 同规模的传统完整后验方案可能需要 TB 级内存 \\
@@ -329,8 +334,8 @@ Rasch/1PL、PCM、PCM2、RSM、2PL、GPCM；单维与题间多维；
 \vspace{4pt}
 同类软件解决的是「模型能不能算出来」；本项目在此之上，
 把「原始数据怎么进来」「结果怎么读懂」「成品怎么出去」「机器怎么调用」
-四件事一并做完，并用 CRAN 的公开审核、96\% 的测试覆盖率和百万级规模验证证明它能用、
-可信、跑得动。
+四件事一并做完，并用 CRAN 的公开审核、96\% 的测试覆盖率、百万级规模验证，
+以及一次 8.5 万人真实调查的全链路复核，证明它能用、可信、跑得动。
 
 \vspace{1.1cm}
 {\color{IRTCgold}\rule{2.6cm}{1.2pt}}\par

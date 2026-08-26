@@ -99,14 +99,70 @@ irtc_proto_mstep_item <- function(a, bvec, nik, x, maxK, maxit = 25L,
   e$vectors %*% diag(pmax(e$values, eps), nrow(S)) %*% t(e$vectors)
 }
 
-# multivariate normal density at grid rows, mean 0, covariance Sigma
-.mvn_density <- function(gridx, Sigma) {
+# log multivariate normal density at grid rows, mean 0, covariance Sigma
+.mvn_logdensity <- function(gridx, Sigma) {
   D <- ncol(gridx)
   R <- chol(Sigma)                                   # upper triangular
   Si <- chol2inv(R)
   logdet <- 2 * sum(log(diag(R)))
   quad <- rowSums((gridx %*% Si) * gridx)
-  exp(-0.5 * (D * log(2 * pi) + logdet + quad))
+  -0.5 * (D * log(2 * pi) + logdet + quad)
+}
+
+# multivariate normal density at grid rows, mean 0, covariance Sigma
+.mvn_density <- function(gridx, Sigma) exp(.mvn_logdensity(gridx, Sigma))
+
+# Discrete prior MASS at the grid rows: the density renormalized to sum to one.
+# The quadrature weights have to be probability mass, not density: summing a
+# density over a grid of spacing h gives ~h^-D, which would offset every reported
+# marginal log-likelihood by n*D*log(1/h) and make deviance / AIC / BIC
+# incomparable across dimensionalities, node settings and the grid engine. It is
+# also what keeps the reported log-likelihood a genuine log-probability (<= 0)
+# when Sigma approaches singularity and the density blows up like 1/sqrt(det).
+# Computed on the log scale so a near-singular Sigma cannot over- or underflow.
+# Posterior quantities are invariant to this rescaling, so parameter estimates,
+# EAPs and expected counts are unchanged.
+.mvn_grid_mass <- function(gridx, Sigma) {
+  ld <- .mvn_logdensity(gridx, Sigma)
+  ld <- ld - max(ld)
+  w <- exp(ld)
+  s <- sum(w)
+  if (!is.finite(s) || s <= 0) return(rep(1 / nrow(gridx), nrow(gridx)))
+  w / s
+}
+
+# Largest absolute off-diagonal correlation of a covariance / correlation matrix.
+.max_abs_offdiag_cor <- function(S) {
+  if (is.null(S) || nrow(S) < 2L) return(0)
+  R <- tryCatch(stats::cov2cor(S), error = function(e) NULL)
+  if (is.null(R) || any(!is.finite(R))) return(1)
+  max(abs(R[upper.tri(R)]))
+}
+
+# Warn when the latent correlations have been driven to the boundary. This is
+# usually a substantive finding -- the dimensions are not separable in this data
+# set and the model has degenerated to a lower-dimensional one -- but it also
+# means the fixed quadrature grid can no longer resolve the ridge, so the
+# information criteria and EAP reliabilities deserve caution.
+.warn_boundary_correlation <- function(Sigma_out, threshold = 0.999) {
+  Ss <- if (is.list(Sigma_out)) Sigma_out else list(Sigma_out)
+  rmax <- suppressWarnings(max(vapply(Ss, .max_abs_offdiag_cor, numeric(1))))
+  if (!is.finite(rmax) || rmax < threshold) return(invisible(FALSE))
+  irtc_warn(code = "W427",
+    en = paste0("The estimated latent correlation reached the boundary (max |r| = ",
+      format(round(rmax, 4)), "); the dimensions are not separable in these data ",
+      "and the model has degenerated to a lower-dimensional one."),
+    zh = paste0("\u4f30\u8ba1\u5f97\u5230\u7684\u7ef4\u5ea6\u95f4\u6f5c\u5728\u76f8\u5173\u5df2\u8fbe\u5230\u8fb9\u754c\uff08\u6700\u5927 |r| = ",
+      format(round(rmax, 4)), "\uff09\uff0c\u8bf4\u660e\u5728\u672c\u6570\u636e\u4e0a\u5404\u7ef4\u5ea6\u65e0\u6cd5\u533a\u5206\uff0c",
+      "\u6a21\u578b\u5df2\u9000\u5316\u4e3a\u66f4\u4f4e\u7ef4\u7684\u7ed3\u6784\u3002"),
+    fix_en = paste0("Treat this as evidence for a lower-dimensional model: refit with ",
+      "fewer dimensions and compare. Information criteria and EAP reliabilities from ",
+      "the degenerate fit are computed on a grid that can no longer resolve the ",
+      "collapsed covariance, so read them with care."),
+    fix_zh = paste0("\u5efa\u8bae\u5c06\u6b64\u89c6\u4e3a\u9700\u8981\u964d\u7ef4\u7684\u8bc1\u636e\uff1a\u6539\u7528\u66f4\u5c11\u7684\u7ef4\u5ea6\u91cd\u65b0\u4f30\u8ba1\u5e76\u6bd4\u8f83\u3002",
+      "\u9000\u5316\u89e3\u4e0b\u7684\u4fe1\u606f\u51c6\u5219\u4e0e EAP \u4fe1\u5ea6\u662f\u5728\u5df2\u65e0\u6cd5\u5206\u8fa8\u584c\u9677\u534f\u65b9\u5dee\u7684\u7f51\u683c\u4e0a\u7b97\u51fa\u7684\uff0c\u8bf7\u8c28\u614e\u89e3\u8bfb\u3002"),
+    class = "irtc_warning_estimation", data = list(max_abs_cor = rmax))
+  invisible(TRUE)
 }
 
 # pack / unpack (a, b, Sigma) <-> parameter vector
@@ -190,7 +246,7 @@ irtc_mml_fast_proto <- function(resp, dim_of, maxK = 2L, Q = 21L,
       for (cc in 1:maxK) probs[((j - 1) * maxK + (cc - 1)) * Q + 1:Q] <- Pj[, cc]
     }
     gw_full <- vapply(seq_len(npat),
-                      function(k) .mvn_density(sweep(gridx, 2, patt$mu[k, ]), Sig_of(k)),
+                      function(k) .mvn_grid_mass(sweep(gridx, 2, patt$mu[k, ]), Sig_of(k)),
                       numeric(nrow(gridx)))
     gw_full <- matrix(gw_full, ncol = npat)
     if (fast && it_em > burnin) {                      # calibrated mass-budget pruning
@@ -274,7 +330,7 @@ irtc_mml_fast_proto <- function(resp, dim_of, maxK = 2L, Q = 21L,
     dev_old <- dev
   }
   z <- .unpack(par, I, maxK, D)
-  eap <- NULL; EAP.rel <- NULL
+  eap <- NULL; eap_sd <- NULL; EAP.rel <- NULL
   if (want_eap) {
     a <- z$a; b <- z$b; Sigma <- z$Sigma
     if (!is.null(Y))     mu <- Y %*% beta
@@ -283,7 +339,7 @@ irtc_mml_fast_proto <- function(resp, dim_of, maxK = 2L, Q = 21L,
     patt <- irtc_proto_build_patterns(mu, group0); npat <- nrow(patt$mu)
     Sig_of <- function(k) if (general) Sigma_list[[patt$group[k] + 1L]] else Sigma
     gw_mat <- vapply(seq_len(npat),
-                     function(k) .mvn_density(sweep(gridx, 2, patt$mu[k, ]), Sig_of(k)),
+                     function(k) .mvn_grid_mass(sweep(gridx, 2, patt$mu[k, ]), Sig_of(k)),
                      numeric(nrow(gridx)))
     gw_mat <- matrix(gw_mat, ncol = npat)
     probs <- numeric(I * maxK * Q)
@@ -296,11 +352,19 @@ irtc_mml_fast_proto <- function(resp, dim_of, maxK = 2L, Q = 21L,
                                 as.integer(Q), as.integer(maxK),
                                 as.integer(n_threads), want_eap = 1L)
     eap <- Ef$eap
-    EAP.rel <- pmin(pmax(apply(eap, 2, stats::var) / diag(Sigma), 1e-3), 0.999)
+    eap_sd <- Ef$eapsd
+    # Same definition as the grid engine (irtc_mml_person_EAP_rel): the case-weighted
+    # ratio of true-score variance to total variance. The previous var(EAP)/diag(Sigma)
+    # proxy ignored both the case weights and the posterior error variance.
+    EAP.rel <- vapply(seq_len(D), function(d)
+      irtc_mml_person_EAP_rel(eap[, d], eap_sd[, d], pweights = w), numeric(1))
+    EAP.rel <- pmin(pmax(EAP.rel, 1e-3), 0.999)
   }
   Sigma_out <- if (G > 1) Sigma_list else if (general) Sigma_list[[1]] else z$Sigma
+  .warn_boundary_correlation(Sigma_out)
   list(a = z$a, b = z$b, Sigma = Sigma_out, deviance = dev, iter = it,
-       eap = eap, EAP.rel = EAP.rel, beta = beta, gmean = gmean, n_eff = n_eff,
+       eap = eap, eap_sd = eap_sd, EAP.rel = EAP.rel, pweights = w,
+       beta = beta, gmean = gmean, n_eff = n_eff,
        G = G, group_structure = group_structure,
        nodes_full = nodes_full, nodes_kept = nodes_kept, keep = keep_final,
        mass_budget = mass_budget, fast = fast, nodes = x,

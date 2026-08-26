@@ -8,6 +8,11 @@
 // (using the person's pattern grid weights), scattering to D marginals + second
 // moments, accumulating WEIGHTED expected counts / per-group second moments / EAP.
 // Memory: per-thread accumulators + per-person length-Q*D scratch.
+//
+// Missing responses (NA, or any code outside 0..maxK-1) contribute a likelihood
+// factor of 1 and no expected counts -- the same treatment the grid engine gives
+// them through resp.ind. Skipping them here is also what keeps NA out of the
+// probs[] index arithmetic below.
 #include <Rcpp.h>
 #include <thread>
 #include <vector>
@@ -33,7 +38,8 @@ static void estep_block(int p0, int p1,
         const double* pw,            // length N, case weights
         const int* group,            // length N, 0-based group per person
         const double* xnode,         // length Q, node coordinates
-        Accum& acc, double* eap)     // eap: N*D output (or NULL)
+        Accum& acc, double* eap,     // eap: N*D output (or NULL)
+        double* eapsd)               // eapsd: N*D posterior SDs (or NULL)
 {
     std::vector<double> L((size_t)D * Q);
     std::vector<double> marg((size_t)D * Q);
@@ -46,8 +52,9 @@ static void estep_block(int p0, int p1,
         // per-dim likelihood vectors
         for (long i = 0; i < (long)D*Q; i++) L[i] = 1.0;
         for (int j = 0; j < I; j++){
-            int d = dimj[j];
             int c = resp[p + (long)j*N];
+            if (c == NA_INTEGER || c < 0 || c >= maxK) continue;   // missing: factor 1
+            int d = dimj[j];
             const double* pj = probs + ((long)j*maxK + c)*Q;
             double* Ld = &L[(long)d*Q];
             for (int q = 0; q < Q; q++) Ld[q] *= pj[q];
@@ -84,18 +91,27 @@ static void estep_block(int p0, int p1,
                 if (jnt != 0.0) acc.nodeocc[g] += w * jnt * inv;
             }
         }
-        // per-person EAP = posterior mean of theta per dimension (unweighted)
+        // per-person EAP = posterior mean of theta per dimension (unweighted),
+        // plus the posterior SD, which the EAP reliability needs.
         if (eap != NULL){
             for (int d = 0; d < D; d++){
-                double e_d = 0.0; const double* md = &marg[(long)d*Q];
-                for (int q = 0; q < Q; q++) e_d += md[q] * xnode[q];
+                double e_d = 0.0, e_d2 = 0.0; const double* md = &marg[(long)d*Q];
+                for (int q = 0; q < Q; q++){
+                    e_d  += md[q] * xnode[q];
+                    e_d2 += md[q] * xnode[q] * xnode[q];
+                }
                 eap[p + (long)d*N] = e_d;
+                if (eapsd != NULL){
+                    double v = e_d2 - e_d*e_d;
+                    eapsd[p + (long)d*N] = v > 0.0 ? std::sqrt(v) : 0.0;
+                }
             }
         }
-        // weighted expected counts
+        // weighted expected counts (missing responses contribute none)
         for (int j = 0; j < I; j++){
-            int d = dimj[j];
             int c = resp[p + (long)j*N];
+            if (c == NA_INTEGER || c < 0 || c >= maxK) continue;
+            int d = dimj[j];
             const double* md = &marg[(long)d*Q];
             double* nik = &acc.nik[((long)j*maxK + c)*Q];
             for (int q = 0; q < Q; q++) nik[q] += w * md[q];
@@ -123,7 +139,9 @@ Rcpp::List irtc_rcpp_proto_estep(IntegerMatrix resp, IntegerVector dimj,
         a.dev = 0.0;
     }
     NumericMatrix eap_mat(want_eap ? N : 0, want_eap ? D : 0);
+    NumericMatrix eapsd_mat(want_eap ? N : 0, want_eap ? D : 0);
     double* eap_ptr = want_eap ? eap_mat.begin() : (double*)NULL;
+    double* eapsd_ptr = want_eap ? eapsd_mat.begin() : (double*)NULL;
     const int* presp = resp.begin();
     const long block_size = 100000;
     for (long bstart = 0; bstart < N; bstart += block_size){
@@ -137,7 +155,7 @@ Rcpp::List irtc_rcpp_proto_estep(IntegerMatrix resp, IntegerVector dimj,
             pool.emplace_back(estep_block, (int)p0, (int)p1, presp, N, I, D, Q, maxK, TP, G,
                 dimj.begin(), probs.begin(), gridcoord.begin(), gw_mat.begin(),
                 pattern.begin(), pweights.begin(), group.begin(), xnode.begin(),
-                std::ref(accs[t]), eap_ptr);
+                std::ref(accs[t]), eap_ptr, eapsd_ptr);
         }
         for (auto& th : pool) th.join();
         Rcpp::checkUserInterrupt();
@@ -156,6 +174,6 @@ Rcpp::List irtc_rcpp_proto_estep(IntegerMatrix resp, IntegerVector dimj,
         dev += a.dev;
     }
     return List::create(_["nik"]=nik, _["M2"]=M2, _["deviance"]=dev, _["wsum"]=wsum,
-                        _["eap"]=eap_mat, _["nodeocc"]=nodeocc,
+                        _["eap"]=eap_mat, _["eapsd"]=eapsd_mat, _["nodeocc"]=nodeocc,
                         _["dims"]=IntegerVector::create(I,maxK,Q,D,G));
 }

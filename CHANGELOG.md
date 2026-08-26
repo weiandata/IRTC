@@ -11,6 +11,83 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 - Add future changes here before release.
 
+## [1.1.2] - 2026-08-27
+
+Correctness release for the multidimensional streaming estimation path,
+prompted by a production survey analysis (85,035 respondents, 10 dichotomous
+items, three content dimensions, sampling weights). Item parameters, latent
+covariances and EAP estimates are unchanged; reported fit measures and the
+weighted classical statistics move. See `NEWS.md` for the user-facing detail
+and `docs/internal/1.1.2-field-report-disposition-zh.md` for the
+finding-by-finding disposition.
+
+### Fixed
+
+- Streaming engine: `NA` in the response matrix caused an out-of-bounds read in
+  the C++ E-step and a segmentation fault. Missing responses are now handled
+  natively, as the grid engine handles them.
+- Streaming engine: the quadrature weights were the normal density at the nodes
+  rather than probability mass, offsetting every reported log-likelihood by
+  `n * ndim * log(1 / h)` and invalidating comparisons across dimensionalities,
+  engines and node settings.
+- Streaming engine: the log-likelihood turned positive (deviance negative) when
+  the latent covariance degenerated. Same root cause; reaching the correlation
+  boundary now warns with code `W427`.
+- Streaming engine: `EAP.rel` ignored the case weights and the posterior error
+  variance; it now uses the grid engine's definition.
+- `irtc_param_table()` (and `irtc_results()`, `irtc_excel()`) read slopes from
+  dimension 1 regardless of the item's loading dimension, reporting
+  `slope_a = 0` and `difficulty_b = NA` for most items of a multidimensional
+  model. Same fix applied to the grid engine's `item_irt` table.
+- Streaming engine: person identifiers passed via `id=` / `pid=` were replaced
+  by row numbers, and `person$pweight` was reported as 1 for every case.
+- `irtc_ctt()`, `irtc_itemfit()` and `irtc_quality()` ignored the sampling
+  weights, mixing weighted IRT parameters with unweighted classical statistics
+  in one results table.
+- The norm-referenced person columns `percentile` and `t_score` were computed
+  unweighted; they now follow the sampling weights, so a percentile reports the
+  share of the represented population below that person.
+- `irtc_score()` applied the answer key to the wrong option when `irtc_read()`
+  had renumbered an item's categories (1..5 to 0..4). The original categories
+  are kept and the key is translated, so a key is written in the coding of the
+  user's own data file.
+- An answer that never occurs among an item's responses is reported (`W205`)
+  instead of scoring everyone wrong.
+- A numeric person ID could reach `irtc_results()` and the ability workbook in
+  scientific notation (`266000000` as `"2.66e+08"`), corrupting the join key.
+- Streaming-engine fits stored neither their response data nor their item
+  names, so item tables were keyed on generic `I1`..`In` with `p_value = NA`,
+  and `irtc_quality()` / `irtc_itemfit()` needed `resp=` passed back in.
+- `irtc_param_table()` did not fall back to the model's stored response data,
+  so `irtc_excel(mod)` wrote a parameter workbook with no `p_value`.
+
+### Added
+
+- `weights=` on `irtc_ctt()`, `irtc_itemfit()`, `irtc_quality()`,
+  `irtc_param_table()`, `irtc_person_table()` and `irtc_results()`; `irtc()`
+  propagates the sampling weights to all of them.
+- Posterior standard errors from the streaming engine (`SD.EAP.Dim*`), so
+  multidimensional fits get the `se_*` columns in `irtc_results()`.
+- `dimension` and `n_loadings` columns in the item parameter table for
+  multidimensional models.
+- Structured error `E409` when the grid path's predicted allocation exceeds the
+  session's memory, replacing an opaque `vector memory limit ... reached`.
+- `irtc_audit_scoring()`: check an archived analysis against the answer-key
+  defect without re-running it, from a saved model, an `irtc_data` object, an
+  `irtc_results()` list or a bare cleaning log.
+- `irtc()` and `irtc_read()` stamp the producing package version on their
+  output.
+- `rid` and other respondent/record ID column names are recognised by
+  `irtc_read()`'s automatic person-ID detection.
+- Regression tests in `tests/testthat/test-streaming-quadrature.R`.
+
+### Changed
+
+- `ic` is a one-row data frame from both engines; the streaming engine
+  previously returned a plain list.
+- `irtc_results()` schema advances to 1.2 and the `irtc_excel()` linking
+  workbook to 1.1. Both additive.
+
 ## [1.1.1] - 2026-07-17
 
 Packaging-only release addressing the CRAN incoming pre-test results for
