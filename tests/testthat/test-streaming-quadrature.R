@@ -487,3 +487,97 @@ test_that("the audit accepts every artefact a project is likely to keep", {
   err <- tryCatch(irtc_audit_scoring(42), error = function(e) e)
   expect_equal(err$code, "E411")
 })
+
+## --- printing and defensive branches ---------------------------------------
+
+test_that("the audit prints a verdict in both languages for every status", {
+  f <- audit_fixture(seed = 91); on.exit(unlink(f), add = TRUE)
+  m <- irtc(f, model = "2PL", key = c(Q1 = 2, Q2 = 3, Q3 = 1, Q4 = 2),
+            id = "pid", verbose = FALSE)
+
+  fixed <- m
+  legacy <- m; legacy$usability$package_version <- NULL
+  legacy$usability$recode_map <- NULL
+  archived <- m; archived$usability$package_version <- "1.1.1"
+
+  set.seed(93); n <- 120
+  sc <- data.frame(pid = seq_len(n), Q1 = rbinom(n, 1, .5), Q2 = rbinom(n, 1, .5),
+                   Q3 = rbinom(n, 1, .5), Q4 = rbinom(n, 1, .5))
+  unscored <- irtc(sc, model = "2PL", id = "pid", verbose = FALSE)
+
+  set.seed(95)
+  zero_based <- data.frame(pid = seq_len(n),
+                           Q1 = sample(0:3, n, TRUE), Q2 = sample(0:3, n, TRUE),
+                           Q3 = sample(0:2, n, TRUE), Q4 = sample(0:2, n, TRUE))
+  f0 <- tempfile(fileext = ".csv"); on.exit(unlink(f0), add = TRUE)
+  utils::write.csv(zero_based, f0, row.names = FALSE)
+  m0 <- irtc(f0, model = "2PL", key = c(Q1 = 1, Q2 = 2, Q3 = 1, Q4 = 0),
+             id = "pid", verbose = FALSE)
+  m0$usability$package_version <- "1.1.1"
+
+  cases <- list(ok_fixed = fixed, affected = archived,
+                affected_if_before_1.1.2 = legacy,
+                not_scored = unscored, not_affected = m0)
+  for (nm in names(cases)) {
+    a <- irtc_audit_scoring(cases[[nm]])
+    expect_equal(a$status, nm)
+    for (lg in c("en", "zh")) {
+      out <- utils::capture.output(print(a, lang = lg))
+      expect_true(length(out) > 2, info = paste(nm, lg))
+      expect_true(any(nzchar(out)), info = paste(nm, lg))
+    }
+  }
+})
+
+test_that("irtc_ctt prints, flags weighting, and rejects bad input", {
+  d <- sq_sim(n = 200, J = 5, D = 1, seed = 97)
+  plain <- utils::capture.output(print(irtc_ctt(as.data.frame(d$resp)),
+                                       lang = "en"))
+  expect_false(any(grepl("case-weighted", plain)))
+  wtd <- utils::capture.output(
+    print(irtc_ctt(as.data.frame(d$resp), weights = runif(200, .5, 2)),
+          lang = "en"))
+  expect_true(any(grepl("case-weighted", wtd)))
+  ## a fitted model is an accepted input; anything else is a coded error
+  m <- irtc(as.data.frame(d$resp), model = "2PL", verbose = FALSE)
+  expect_s3_class(irtc_ctt(m), "irtc_ctt")
+  err <- tryCatch(irtc_ctt(42), error = function(e) e)
+  expect_equal(err$code, "E301")
+})
+
+test_that("alpha falls back to complete cases and copes with degenerate input", {
+  ## a pair of items never answered together makes the pairwise covariance
+  ## matrix incomplete, so the complete-case fallback has to take over
+  x <- matrix(NA_real_, 40, 3)
+  x[1:20, 1] <- rbinom(20, 1, .5); x[1:20, 3] <- rbinom(20, 1, .5)
+  x[21:40, 2] <- rbinom(20, 1, .5); x[21:40, 3] <- rbinom(20, 1, .5)
+  colnames(x) <- c("A", "B", "C")
+  expect_true(is.na(IRTC:::irtc_ctt_alpha(x)))
+  ## a single item cannot have an alpha
+  expect_true(is.na(IRTC:::irtc_ctt_alpha(x[, 1, drop = FALSE])))
+  ## zero total variance is not an alpha either
+  const <- matrix(1, 30, 3, dimnames = list(NULL, c("A", "B", "C")))
+  expect_true(is.na(IRTC:::irtc_ctt_alpha(const)))
+})
+
+test_that("the weighted helpers survive degenerate input", {
+  ## a single weight is recycled to every case
+  expect_equal(IRTC:::irtc_prep_case_weights(3, 4), rep(1, 4))
+  ## nothing observed, or no weight on what is observed
+  expect_true(is.na(IRTC:::irtc_weighted_mean(rep(NA_real_, 5), rep(1, 5))))
+  expect_true(is.na(IRTC:::irtc_weighted_mean(c(1, 2), c(0, 0))))
+  ## fewer than two usable pairs gives no covariance
+  expect_true(is.na(IRTC:::irtc_weighted_cov2(c(1, NA), c(NA, 2), c(1, 1))))
+  expect_true(is.na(IRTC:::irtc_weighted_cov2(c(1, 2), c(1, 2), c(0.2, 0.2))))
+  ## a constant vector has no correlation with anything
+  expect_true(is.na(IRTC:::irtc_weighted_cor(c(1, 1, 1), c(1, 2, 3), rep(1, 3))))
+  expect_true(is.na(IRTC:::irtc_weighted_sd(c(1, NA), c(NA, 2))))
+  ## percentiles: all missing, and no usable weight
+  expect_true(all(is.na(IRTC:::irtc_weighted_percentile(rep(NA_real_, 4),
+                                                        rep(1, 4)))))
+  expect_true(all(is.na(IRTC:::irtc_weighted_percentile(c(1, 2), c(0, 0)))))
+  ## a constant vector has no T score
+  expect_true(all(is.na(IRTC:::irtc_weighted_tscore(rep(2, 5), rep(1, 5)))))
+  ## non-numeric ids are passed through untouched
+  expect_equal(IRTC:::irtc_format_id(c("S1", "S2")), c("S1", "S2"))
+})

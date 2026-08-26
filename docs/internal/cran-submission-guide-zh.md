@@ -300,6 +300,10 @@ Rscript -e 'devtools::release(".")'
    LaTeX 错误就是被这个参数遮住的。确认输出里有
    `checking PDF version of manual ... OK`。
 
+   直接跑 `Rscript scripts/verify-release-1.1.2.R` 即可：这个脚本把上述检查
+   全部串成一道关卡，任何一项不达标都会停下来。它不会传 `--no-manual`，并且
+   会断言生成的手册中不含 CJK 字符——也就是 1.1.0 栽的那个跟头。
+
 5. **win-builder R-devel 仍是必做项**，理由同上文：1.1.0 的测试失败只在 r-devel
    上复现。
 

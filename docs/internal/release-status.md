@@ -63,8 +63,15 @@ Verification:
   export path complete. The `.sav` route reproduces the deviance, AIC and
   BIC of the analysts' own CSV pipeline exactly.
 
+Verification is reproducible: `Rscript scripts/verify-release-1.1.2.R` runs
+all of the above as a gate and fails on any shortfall. Unlike its 1.1.0
+predecessor it never passes `--no-manual`, and it asserts that the built
+manual is free of CJK characters, so the failure mode described in the 1.1.0
+entry below cannot recur silently.
+
 Not yet verified: win-builder r-devel. Required before submission, since
-r-devel is the only flavor that caught the 1.1.0 test failure.
+r-devel is the only flavor that caught the 1.1.0 test failure; the script
+ends by saying so rather than letting a local green run look complete.
 
 ## 1.1.1 (verified 2026-07-17, accepted by CRAN 2026-07)
 
