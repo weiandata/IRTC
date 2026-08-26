@@ -62,7 +62,12 @@ not of the package: HTML Tidy is too old for HTML validation and package
 
 ## Test environments
 
-* Local: macOS Tahoe 26.5.1, R 4.6.0 (aarch64-apple-darwin23)
+* Local: macOS Tahoe 26.5.1, R 4.6.0 (aarch64-apple-darwin23) --
+  `R CMD check --as-cran` with the PDF manual built
+* win-builder, R-release: R 4.6.1 (2026-06-24 ucrt), x86_64-w64-mingw32 --
+  Status OK, 0 notes
+* win-builder, R-devel: R Under development (unstable) (2026-08-24 r90445
+  ucrt), x86_64-w64-mingw32 -- Status OK, 0 notes
 * GitHub Actions: R release on macOS, Windows, and Linux
 
 Test suite: 1298 assertions in 340 test blocks across 62 files, 0 failures,

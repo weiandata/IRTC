@@ -63,15 +63,40 @@ Verification:
   export path complete. The `.sav` route reproduces the deviance, AIC and
   BIC of the analysts' own CSV pipeline exactly.
 
+- win-builder, both Windows flavors, on the submission tarball built from a
+  clean `git archive HEAD` export:
+  - R-release `R version 4.6.1 (2026-06-24 ucrt)`, x86_64-w64-mingw32:
+    **Status OK**, 0 notes. `checking PDF version of manual` OK [12s];
+    `checking tests` OK [238s]. Install 43s, check 319s.
+  - R-devel `R Under development (unstable) (2026-08-24 r90445 ucrt)`,
+    x86_64-w64-mingw32: **Status OK**, 0 notes (only the routine
+    "specified C++17" info line). `checking PDF version of manual` OK [13s];
+    `checking tests` OK [16m]; `checking examples` OK. Install 45s, check
+    1105s. This is the flavor that caught the 1.1.0 test failure, so it is
+    the one that confirms the released-R wording assumption is gone.
+
+  Note on check time: 1105s total on win-builder r-devel, of which 960s is
+  the test suite, against 326s for the tests in the 1.1.1 run. The same
+  suite takes 61s locally (macOS, R 4.6.0, aarch64), so most of the gap is
+  the environment rather than the tests; part of the increase is genuine
+  (1298 assertions against 1191) and part may be machine load, since a
+  single win-builder sample cannot separate the two. CRAN's guidance is
+  that a check should take under 10 minutes on its own machines, which are
+  faster than win-builder. Status came back OK, so nothing was flagged
+  automatically, but if a reviewer raises timing the remedy is to guard the
+  heaviest streaming fits in `test-sp5-robustness.R` (22s locally, the
+  slowest file) and `test-streaming-quadrature.R` with `skip_on_cran()`.
+  The package currently uses no `skip_on_cran()` anywhere, i.e. CRAN runs
+  everything.
+
 Verification is reproducible: `Rscript scripts/verify-release-1.1.2.R` runs
 all of the above as a gate and fails on any shortfall. Unlike its 1.1.0
 predecessor it never passes `--no-manual`, and it asserts that the built
 manual is free of CJK characters, so the failure mode described in the 1.1.0
 entry below cannot recur silently.
 
-Not yet verified: win-builder r-devel. Required before submission, since
-r-devel is the only flavor that caught the 1.1.0 test failure; the script
-ends by saying so rather than letting a local green run look complete.
+Verification is complete. The tarball at
+`IRTC_1.1.2.tar.gz` (built from `git archive HEAD`) is ready to submit.
 
 ## 1.1.1 (verified 2026-07-17, accepted by CRAN 2026-07)
 
