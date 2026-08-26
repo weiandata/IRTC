@@ -1,4 +1,11 @@
-# IRTC User Manual (English) — V1.1.0
+# IRTC User Manual (English) — V1.1.2
+
+> **Upgrading from 1.1.1 or earlier?** 1.1.2 is a correctness release. Three
+> of its fixes concern output that was **silently wrong**: the marginal
+> log-likelihood and information criteria reported by the multidimensional
+> streaming engine, the item parameter table of a multidimensional model, and
+> the option an answer key selected. See "Upgrading to 1.1.2" at the end of
+> section 2.1 before reusing an older analysis.
 
 **An R package for item response theory estimation — from complete newcomer to production pipeline**
 
@@ -78,7 +85,7 @@ Higher ability θ and lower item difficulty b_j mean a higher probability of a c
 install.packages("IRTC")
 
 # or from a source tarball (contains C++, needs a compiler)
-install.packages("path/to/IRTC_1.1.1.tar.gz", repos = NULL, type = "source")
+install.packages("path/to/IRTC_1.1.2.tar.gz", repos = NULL, type = "source")
 library(IRTC)
 
 # optional helpers, installed on demand (Excel/SPSS import, Excel/Word
@@ -156,7 +163,7 @@ mod_fast$accuracy_report    # measured approximation error (met=TRUE = within to
 
 # 2. Full Function Reference
 
-IRTC 1.1.0 exports the **main workflow functions** (2.1 — start here),
+IRTC 1.1.2 exports the **main workflow functions** (2.1 — start here),
 the **expert estimation functions** `irtc.mml()` / `irtc.mml.2pl()`
 (2.2-2.5) and **6 S3 methods** (`summary`, `print`, `logLik`, `anova`,
 `plot`, plus class-specific `print` methods).
@@ -174,15 +181,16 @@ current setting).
 | Data | `irtc_read()` | multi-format import with automatic cleaning and a bilingual log |
 | Data | `irtc_score()` | answer-key (0/1) or rules-table (partial credit) scoring |
 | Data | `irtc_check_data()` | pre-estimation diagnostics with machine-readable fixes |
-| Statistics | `irtc_ctt()` | classical difficulty, item-rest correlations, Cronbach's alpha |
-| Statistics | `irtc_itemfit()` | infit/outfit mean squares with Wilson-Hilferty t |
-| Statistics | `irtc_quality()` | four-level plain-language item ratings with reasons and advice |
+| Data | `irtc_audit_scoring()` | triage an archived analysis against the pre-1.1.2 answer-key defect |
+| Statistics | `irtc_ctt()` | classical difficulty, item-rest correlations, Cronbach's alpha (weight-aware) |
+| Statistics | `irtc_itemfit()` | infit/outfit mean squares with Wilson-Hilferty t (weight-aware) |
+| Statistics | `irtc_quality()` | four-level plain-language item ratings with reasons and advice (weight-aware) |
 | Output | `plain_summary()` | layered plain-language summary, conclusion first |
 | Output | `irtc_excel()` | three Excel workbooks: quality / linking parameters / abilities |
 | Output | `irtc_param_table()` / `irtc_person_table()` | the underlying data frames (no openxlsx needed) |
 | Output | `irtc_report()` | Word/HTML reports for decision / survey / stat audiences |
 | Output | `plot()` (plot.irtc) | Wright map, ability histogram, quality summary, ICC curves |
-| AI | `irtc_results()` / `irtc_json()` | frozen-schema tidy results (v1.0) and JSON export |
+| AI | `irtc_results()` / `irtc_json()` | frozen-schema tidy results (v1.2) and JSON export |
 
 ### `irtc(data, model, key = NULL, rules = NULL, q = NULL, on_mismatch = c("warn","error"), rare_categories = c("collapse","prior"), id = NULL, weights = NULL, sheet = 1, missing_codes = c(-9, -99, 99, 999), check = TRUE, quality = TRUE, verbose = TRUE, ...)`
 
@@ -231,6 +239,29 @@ whitespace and full-width characters are normalised. Add a
 0. `rules` is a data frame or file (item, response, score) for arbitrary
 partial credit; responses without a rule become NA with warning `W207`.
 
+**Write the key in the coding of your own data file.** `irtc_read()` may
+renumber an item's categories to consecutive scores starting at 0 (a file
+coded 1..5 becomes 0..4, logged as `I124`); it records the original
+categories and the key, the partial answers and a `rules` table are
+translated back through that record. An answer that never occurs among an
+item's responses raises `W205` rather than scoring every respondent wrong,
+which catches a mistyped key as well as an option nobody chose. Up to and
+including 1.1.1 the key was matched against the renumbered values, so a key
+of `c(Q1 = 2)` selected whichever option had *become* 2 — silently. Use
+`irtc_audit_scoring()` on an archived analysis to find out whether it was
+affected.
+
+### `irtc_audit_scoring(x)`
+
+Checks whether a saved analysis was hit by the answer-key defect above,
+without re-running it. `x` is a fitted model, an `irtc_data` object, an
+`irtc_results()` list, or a bare cleaning-log data frame (which also travels
+inside the exported workbooks and reports). `$status` is one of
+`not_scored`, `not_affected`, `ok_fixed`, `affected` or
+`affected_if_before_1.1.2`; `$affected_items` names the items to re-run.
+Analyses on already-scored 0/1 data and keys on items already coded from 0
+are never affected.
+
 ### `irtc_read_q(x, sheet = 1)`
 
 Reads a Q (item-by-dimension) matrix from a file, a data frame, or a
@@ -256,13 +287,19 @@ persons and duplicated IDs. Returns `$ok` plus an `$issues` data frame
 (code, severity, where, bilingual message and fix) that automated callers
 can act on row by row.
 
-### `irtc_ctt(x, key = NULL)` / `irtc_itemfit(mod, resp = NULL)` / `irtc_quality(mod, resp = NULL, thresholds = NULL)`
+### `irtc_ctt(x, key = NULL, weights = NULL)` / `irtc_itemfit(mod, resp = NULL, weights = NULL)` / `irtc_quality(mod, resp = NULL, thresholds = NULL, weights = NULL)`
 
 Classical statistics; residual-based infit/outfit at the EAP estimates
 (ideal 1.0, normal range 0.7-1.3); and the combined four-level rating
 (good / acceptable / review / revise) with bilingual reasons and advice.
 Negative discrimination (usually a wrong key) always yields "revise".
 Defaults come from `irtc_quality_thresholds()` and can be overridden.
+
+All three honour case (sampling) weights, and `irtc()` passes on the weights
+it already forwards to the estimation, so classical difficulties, item fit
+and the ratings derived from them describe the same weighted population as
+the IRT parameters beside them. Constant weights reproduce the unweighted
+statistics exactly, so unweighted analyses are unaffected.
 
 ### `plain_summary(mod, lang = irtc_lang())`
 
@@ -298,7 +335,7 @@ directories of the output file are created automatically.
 The same base-graphics figures that the reports embed; `type = "icc"`
 accepts an `items =` selection (unidimensional models).
 
-### `irtc_results(mod, resp = NULL)` / `irtc_json(mod, file = NULL, resp = NULL, pretty = TRUE)`
+### `irtc_results(mod, resp = NULL, weights = NULL)` / `irtc_json(mod, file = NULL, resp = NULL, pretty = TRUE)`
 
 Five frozen-schema data frames: `model_info`, `items` (parameters + CTT +
 fit + ratings + `status` and rare-category annotations), `persons`,
@@ -316,6 +353,50 @@ Every error/warning of the usability layer carries `$code`, `$reason`,
 `tryCatch(expr, irtc_error = function(e) e$code)`. Code ranges: E0xx
 missing dependency, E1xx reading, E2xx scoring, E3xx validation, E4xx
 estimation, E5xx export/report.
+
+### Upgrading to 1.1.2
+
+A production survey analysis (85,035 respondents, 10 dichotomous items, three
+content dimensions, sampling weights) exposed 15 defects, fixed here. Item
+parameters, latent covariances and EAP estimates are unchanged; what moves is
+what gets reported.
+
+Three fixes concern output that was silently wrong:
+
+1. **The answer key could select the wrong option** when `irtc_read()` had
+   renumbered an item's categories (a file coded 1..5). Use
+   `irtc_audit_scoring()` to triage archived analyses.
+2. **The multidimensional streaming engine's log-likelihood and information
+   criteria were offset** by `n * ndim * log(1 / h)`, where `h` is the node
+   spacing. Comparisons within one dimensionality and node setting were
+   unaffected, but comparisons **across `ndim` or across engines** — and any
+   change of `control$nodes` — were not. Re-do any model-choice conclusion
+   that relied on them.
+3. **Item parameter tables read the slope from dimension 1 only**, so items
+   of a multidimensional model that load elsewhere were reported with
+   `slope_a = 0` and `difficulty_b = NA`. Regenerate any cross-year linking
+   workbook produced from a multidimensional fit.
+
+Other fixes worth knowing about:
+
+- `NA` in the response matrix no longer crashes the streaming engine; both
+  engines now treat missing responses natively, so complete-case deletion
+  before a multidimensional fit is unnecessary.
+- Sampling weights now reach the classical statistics, item fit, quality
+  ratings and the norm-referenced `percentile` / `t_score` columns, not only
+  the estimation. Weighted analyses will see those numbers change.
+- The streaming path keeps the caller's `pid` and case weights, reports
+  posterior standard errors, and stores its response data and item names, so
+  `irtc_quality()` / `irtc_itemfit()` / `irtc_excel()` no longer need `resp=`
+  passed back in for a multidimensional model.
+- A whole-number person ID is never written in scientific notation.
+- `ic` is a one-row data frame from both engines.
+- `irtc_results()` advances to schema 1.2 and the linking workbook to 1.1,
+  both additive; the item table gains `dimension` and `n_loadings` for
+  multidimensional models.
+
+An analysis that uses no weights, no answer key and one dimension is
+bit-for-bit unchanged.
 
 ## 2.2 `irtc.mml()` — fixed-slope models (Rasch / PCM / RSM)
 
@@ -515,8 +596,18 @@ reason and a **Fix** line — follow the fix first. Code ranges:
 | E1xx | reading files | E103 file not found; E105 unsupported extension |
 | E2xx | answer-key scoring | E204 key item not present in the data |
 | E3xx | data checks | E305 text columns (supply `key=`); E308 negative values |
-| E4xx | estimation | E406 missing `model=`; E407 data check failed (with issue list); E408 estimation failed |
+| E4xx | estimation | E406 missing `model=`; E407 data check failed (with issue list); E408 estimation failed; E409 grid engine out of memory |
 | E5xx | export/reports | E501 file exists (use `overwrite=TRUE`) |
+
+New in 1.1.2:
+
+| Code | When | What to do |
+| --- | --- | --- |
+| `W205` | an answer in the key never occurs among that item's responses | check the key against the option codes in the data file; write the key in the file's own coding |
+| `W427` | an estimated latent correlation reached the boundary 1.000 | the dimensions are not separable in these data and the model has degenerated to a lower-dimensional one; refit with fewer dimensions and compare. The criteria and EAP reliabilities of the degenerate fit deserve caution |
+| `E409` | `method="grid"` was requested but the posterior matrix will not fit | the message names the predicted size; use `method="streaming"`, or fewer nodes via `control=list(nodes=seq(-6, 6, length.out=15))`. `method="auto"` already avoids this |
+| `E410` | `weights=` has the wrong length, or negative/missing values | one finite non-negative weight per person, in the same row order |
+| `E411` | `irtc_audit_scoring()` got an unsupported input | pass a fitted model, an `irtc_data`, an `irtc_results()` list, or a cleaning-log data frame |
 
 Programmatic handling: `tryCatch(expr, irtc_error = function(e) e$code)`.
 The sections below cover engine-level problems, which mostly arise when

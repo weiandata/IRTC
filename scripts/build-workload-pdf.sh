@@ -8,7 +8,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 ASSETS="$ROOT/scripts/manual-pdf"
-OUT="$ROOT/docs/IRTC工作量说明_中文_V1.1.1.pdf"
+OUT="$ROOT/docs/IRTC工作量说明_中文_V1.1.2.pdf"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 

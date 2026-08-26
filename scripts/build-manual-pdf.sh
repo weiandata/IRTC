@@ -9,8 +9,8 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 ASSETS="$ROOT/scripts/manual-pdf"
-SRC="$ROOT/docs/manuals/IRTC手册-中文-V1.1.1.md"
-OUT="$ROOT/docs/manuals/IRTC使用手册_中文_V1.1.1.pdf"
+SRC="$ROOT/docs/manuals/IRTC手册-中文-V1.1.2.md"
+OUT="$ROOT/docs/manuals/IRTC使用手册_中文_V1.1.2.pdf"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
@@ -47,7 +47,7 @@ pandoc "$TMP/manual.md" \
   -V monofontoptions="HyphenChar=None" \
   -V CJKmainfont="Songti SC" \
   -V CJKoptions="BoldFont=Songti SC Bold,ItalicFont=Kaiti SC" \
-  -V title-meta="IRTC 使用手册（中文 · 零基础完整版 · V1.1.1）" \
+  -V title-meta="IRTC 使用手册（中文 · 零基础完整版 · V1.1.2）" \
   -V author-meta="马崑翔 Kunxiang Ma" \
   -V subject="IRTC 1.1.1 项目反应理论分析工具包 · 中文使用手册" \
   -V lang=zh-CN \

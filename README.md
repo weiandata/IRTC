@@ -15,6 +15,13 @@ for you as well, while leaving the full expert API available underneath.
 
 > **Status:** on CRAN — install with `install.packages("IRTC")`. The API is
 > stable; 1.1.x is backward compatible with 1.0.
+>
+> **1.1.2 is a correctness release.** Three of its fixes concern output that
+> was silently wrong in 1.1.1 and earlier: the log-likelihood and information
+> criteria reported by the multidimensional streaming engine, the item
+> parameter table of a multidimensional model, and the option an answer key
+> selected. If you have analyses made with an earlier version, see
+> [NEWS.md](NEWS.md) and run `irtc_audit_scoring()` on any that used `key=`.
 
 ## What it looks like
 
@@ -122,12 +129,16 @@ if (chk$ok) {
 
 Errors are structured conditions carrying a code, a reason and a fix.
 
+Sampling weights, when supplied, are used throughout: the IRT estimation, the
+classical statistics, item fit, the quality ratings and the norm-referenced
+person columns all describe the same weighted population.
+
 See [examples/basic-usage.R](examples/basic-usage.R) for a runnable tour.
 
 ## Documentation
 
 - [English manual](docs/manuals/IRTC-Manual-English.md) —
-  [中文使用手册](docs/manuals/IRTC手册-中文-V1.1.1.md)
+  [中文使用手册](docs/manuals/IRTC手册-中文-V1.1.2.md)
 - In R: `?irtc`, `?irtc.mml`, `help(package = "IRTC")`
 - [Documentation index](docs/README.md)
 

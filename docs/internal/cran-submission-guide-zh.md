@@ -2,10 +2,19 @@
 
 > 本指南面向第一次向 CRAN 提交 R 包的作者，覆盖从准备、检查、构建、提交到收到结果后处理的**完整流程**，并列出 IRTC 的包级合规检查要求。
 >
-> 当前状态：**1.1.1 已通过 CRAN 审核并上架**（2026-07，IRTC 首个 CRAN 版本），
-> 用 `install.packages("IRTC")` 即可安装。提交前最近一次完整 `R CMD check --as-cran`
-> 为 0 ERROR、0 WARNING、1 NOTE（“New submission” + 拼写误报）；win-builder
-> R-devel 复验同为 1 NOTE。
+> 当前状态：**1.1.2 已本地验证完毕、等待提交**。这是 IRTC 在 CRAN 上的第一次
+> **更新**提交（1.1.1 是首次提交并已上架）。本地完整 `R CMD check --as-cran`
+> （**含 PDF 手册构建**）为 0 ERROR、0 WARNING、0 包级 NOTE；`checking PDF version
+> of manual ... OK`，生成的手册中 CJK 字符数为 0。**尚未做 win-builder R-devel 复验**
+> ——按下文第 110 行起的要求，这是提交前的必做项。
+>
+> 更新提交与首次提交的差别（见下文“更新提交要点”）：不再有 “New submission” NOTE，
+> 但需要在 `cran-comments.md` 里说明本次改了什么、是否破坏向后兼容、以及下游依赖
+> 的检查结果。
+>
+> 历史：**1.1.1 已通过 CRAN 审核并上架**（2026-07，IRTC 首个 CRAN 版本）。提交前完整
+> `R CMD check --as-cran` 为 0 ERROR、0 WARNING、1 NOTE（“New submission” + 拼写
+> 误报）；win-builder R-devel 复验同为 1 NOTE。
 >
 > **1.1.0 曾被 incoming 自动预检退回**（2 ERROR / 1 WARNING）。退回原因、根因分析与
 > 修复方式见 [CRAN 提交实战记录：1.1.0 被拒与 1.1.1 重投](cran-submission-1.1.1-zh.md)。
@@ -265,3 +274,34 @@ Rscript -e 'devtools::check(".", args="--as-cran")'
 Rscript -e 'devtools::check_win_devel(".")'
 Rscript -e 'devtools::release(".")'
 ```
+
+---
+
+## 附：更新提交要点（1.1.2 及以后）
+
+首次提交与更新提交的流程基本一致，差别集中在下面几点。
+
+1. **版本号必须高于 CRAN 上的现有版本。** `DESCRIPTION` 的 `Version` 与 `Date`
+   都要更新；`NEWS.md` 顶部新增本版条目（CRAN 会读它）。
+
+2. **不再有 “New submission” NOTE。** 如果检查结果里还有 NOTE，它就是真问题，
+   不能再用“首次提交”解释过去。目标是 0 ERROR / 0 WARNING / 0 NOTE。
+
+3. **`cran-comments.md` 要写清三件事**：
+   - 本版改了什么（一两句话，指向 `NEWS.md`）；
+   - **是否破坏向后兼容**。IRTC 1.1.2 没有破坏：函数签名只增不改，新增参数
+     全部有默认值，结构版本只增列。但**报告出来的数值有变化**（修正了错误的
+     对数似然、加权口径的统计量），这一点要主动说明，不要让 CRAN 或用户自己发现。
+   - **下游依赖（reverse dependencies）的检查结果**。用
+     `tools::check_packages_in_dir()` 或 `revdepcheck::revdep_check()` 跑一遍；
+     若目前没有下游包，写明 “no reverse dependencies”。
+
+4. **PDF 手册必须真的构建过。** 本地检查不要加 `--no-manual`——1.1.0 被退回的
+   LaTeX 错误就是被这个参数遮住的。确认输出里有
+   `checking PDF version of manual ... OK`。
+
+5. **win-builder R-devel 仍是必做项**，理由同上文：1.1.0 的测试失败只在 r-devel
+   上复现。
+
+6. 提交后如果 CRAN 要求修改，**再次提升版本号**（如 1.1.2 → 1.1.3），并在
+   `cran-comments.md` 顶部写 “Resubmission” 及本次改动。

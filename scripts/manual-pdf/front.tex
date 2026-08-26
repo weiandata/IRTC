@@ -53,7 +53,7 @@
   \node[draw=IRTCgold, line width=0.9pt, rounded corners=3pt,
         inner xsep=13pt, inner ysep=7pt, text=white,
         font=\LightFont\fontsize{11.5}{14}\selectfont]
-    {V1.1.1 \ \ 正式发布版 \ \ · \ \ 已发布于 CRAN};
+    {V1.1.2 \ \ 正确性修正版 \ \ · \ \ 已发布于 CRAN};
 \end{tikzpicture}
 
 \vfill
@@ -67,7 +67,7 @@
 \vspace{0.75cm}
 {\LightFont\fontsize{10.5}{16}\selectfont\color{white}%
  著作权人：惟安数据科技（北京）有限公司\par
- 软件版本 1.1.1（2026-07-17）\quad · \quad 手册发布 2026 年 8 月\par}
+ 软件版本 1.1.2（2026-08-27）\quad · \quad 手册发布 2026 年 8 月\par}
 \vspace{0.9cm}
 {\LatinDisplay\fontsize{11}{14}\selectfont\color{IRTCgoldsoft}%
  \IRTColdtexttt{install.packages("IRTC")}\par}
@@ -83,13 +83,13 @@
 {\fontsize{10.5}{18}\selectfont\color{IRTCink}
 \begin{tabular}{@{}p{3.2cm}@{}p{11.5cm}@{}}
 \textbf{手册名称} & IRTC 使用手册（中文 · 零基础完整版）\\
-\textbf{对应软件} & IRTC 1.1.1，发布日期 2026-07-17\\
+\textbf{对应软件} & IRTC 1.1.2，发布日期 2026-08-27\\
 \textbf{发行渠道} & CRAN（\IRTColdtexttt{install.packages("IRTC")}）；源码仓库 GitHub \mbox{weiandata/IRTC}\\
 \textbf{制作与维护} & 马崑翔（Kunxiang Ma），makunxiang@weiandata.com\\
 \textbf{著作权人} & 惟安数据科技（北京）有限公司，contact@weiandata.com\\
 \textbf{软件许可} & GPL (>= 2)；详见软件包内 LICENSE 与 \IRTColdtexttt{inst/COPYRIGHTS}\\
 \textbf{方法依据} & Adams, Wilson \& Wang (1997), \emph{Applied Psychological Measurement}\\
-\textbf{手册版本} & V1.1.1 正式发布版，2026 年 8 月\\
+\textbf{手册版本} & V1.1.2，2026 年 8 月\\
 \end{tabular}\par}
 
 \vspace{1.0cm}
@@ -97,9 +97,11 @@
   arc=2pt, left=13pt, right=13pt, top=10pt, bottom=10pt,
   borderline west={2.8pt}{0pt}{IRTCgold}]
 {\fontsize{10}{16}\selectfont\color{IRTCink}
-\textbf{关于版本一致性}\quad 本手册与 IRTC 1.1.1 逐条核对。1.1.1 相对 1.1.0 只做打包修正，
-函数、参数与估计结果完全一致，因此手册内容对 1.1.0 同样适用。若手册与包内帮助页
-（\IRTColdtexttt{?irtc}、\IRTColdtexttt{?irtc.mml}）出现不一致，以帮助页为准。}
+\textbf{关于版本一致性}\quad 本手册与 IRTC 1.1.2 逐条核对。\textbf{1.1.2 是正确性修正版}：
+其中三处修正涉及 1.1.1 及更早版本中会静默产生错误结果的输出——多维流式引擎报告的
+对数似然与信息准则、多维模型的题目参数表，以及答案键实际作用的选项。若你用早期版本
+做过分析，请先读附录 D。若手册与包内帮助页（\IRTColdtexttt{?irtc}、
+\IRTColdtexttt{?irtc.mml}）出现不一致，以帮助页为准。}
 \end{tcolorbox}
 
 \vfill
@@ -141,9 +143,11 @@
 遇到报错查第 8 章，忘了名词查第 9 章，找函数用法查第 14 章。
 每章末尾都有「本章你应该掌握的」小结，用来确认自己有没有读懂。
 
-\textbf{关于这一版。}\quad IRTC 1.1.1 已通过 CRAN 审核并正式上架，
+\textbf{关于这一版。}\quad IRTC 已通过 CRAN 审核并正式上架，
 在 R 中运行 \IRTColdtexttt{install.\allowbreak{}packages("IRTC")} 即可安装。
-软件的安装、文档与跨平台可用性都已经过 R 社区公开检查。本手册即随这一版本发布。
+1.1.2 是一次正确性修正版：它源于一次真实的全国性调查分析，以及随后用原始数据文件
+做的全量验证，共修正 15 处缺陷，其中三处会静默产生错误结果。题目参数与个人能力估计
+不变，变的是此前算错的那些输出。升级须知见附录 D。
 
 \vspace{0.7cm}
 {\color{IRTCgold}\rule{2.6cm}{1.2pt}}\par
