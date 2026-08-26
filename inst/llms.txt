@@ -28,6 +28,7 @@ or "en". Machine-readable schemas never depend on the language option.
                                            # (default) | "prior" for score
                                            # categories nobody reached.
 4. res <- irtc_results(mod)                # stable tidy schema (see below)
+   irtc_audit_scoring(mod)                 # archived analyses: see below
    irtc_json(mod, "results.json")          # same content as JSON
 5. irtc_excel(mod, dir="out")              # 3 xlsx files: item quality /
                                            # item parameters (linking) /
@@ -78,6 +79,16 @@ records the original categories in $recode_map. Write answer keys in the coding
 of the data file itself: irtc_score() translates key, partial answers and rules
 through that map. An answer absent from an item's observed responses raises
 W205 instead of silently scoring everyone wrong.
+
+## Auditing an archived analysis
+
+irtc_audit_scoring(x) checks a saved analysis against the pre-1.1.2 answer-key
+defect without re-running it. x = fitted model / irtc_data / irtc_results() /
+cleaning-log data frame. $status is one of not_scored, not_affected, ok_fixed,
+affected, affected_if_before_1.1.2; $affected_items names the items to re-run
+(empty unless the status is a risk one). Risk condition: an item was scored by
+key/rules AND its categories were renumbered (I124). Already-scored 0/1 data and
+keys on items already coded from 0 are never affected.
 
 ## Structured conditions
 

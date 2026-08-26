@@ -256,7 +256,13 @@ irtc <- function(data, model, key=NULL, rules=NULL, q=NULL,
         score_info=data_obj$score_info,
         weights=data_obj$weights,
         rare_categories=rare$info,
-        rare_mode=rare_categories)
+        rare_mode=rare_categories,
+        ## stamped so that a saved fit can be audited later: whether the
+        ## answer key was applied in the data file's own category coding
+        ## depends on the package version that produced it, see
+        ## irtc_audit_scoring()
+        package_version=as.character(utils::packageVersion("IRTC")),
+        recode_map=data_obj$recode_map)
     if (quality) {
         ## Sampling weights reached the MML estimation through 'pweights'; the
         ## classical statistics, item fit and quality ratings printed alongside

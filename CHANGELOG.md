@@ -72,6 +72,11 @@ finding-by-finding disposition.
   multidimensional models.
 - Structured error `E409` when the grid path's predicted allocation exceeds the
   session's memory, replacing an opaque `vector memory limit ... reached`.
+- `irtc_audit_scoring()`: check an archived analysis against the answer-key
+  defect without re-running it, from a saved model, an `irtc_data` object, an
+  `irtc_results()` list or a bare cleaning log.
+- `irtc()` and `irtc_read()` stamp the producing package version on their
+  output.
 - `rid` and other respondent/record ID column names are recognised by
   `irtc_read()`'s automatic person-ID detection.
 - Regression tests in `tests/testthat/test-streaming-quadrature.R`.

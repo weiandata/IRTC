@@ -112,7 +112,8 @@ irtc_read <- function(x, sheet=1, id=NULL, weights=NULL,
     }
 
     out <- list(resp=raw, pid=pid, weights=wgt, dropped=dropped, log=log,
-        source=source_label, clean=clean, recode_map=recode_map)
+        source=source_label, clean=clean, recode_map=recode_map,
+        package_version=as.character(utils::packageVersion("IRTC")))
     class(out) <- "irtc_data"
     if (verbose) {
         print(out)

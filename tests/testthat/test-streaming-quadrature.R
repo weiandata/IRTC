@@ -399,3 +399,91 @@ test_that("a streaming fit carries its response data and item names", {
   expect_s3_class(irtc_itemfit(m), "irtc_itemfit")
   expect_equal(irtc_results(m)$items$item_id, colnames(d$resp))
 })
+
+## --- retrospective audit of archived analyses ------------------------------
+
+audit_fixture <- function(seed = 79, n = 150) {
+  set.seed(seed)
+  raw <- data.frame(pid = seq_len(n),
+                    Q1 = sample(1:4, n, TRUE), Q2 = sample(1:4, n, TRUE),
+                    Q3 = sample(1:3, n, TRUE), Q4 = sample(1:3, n, TRUE))
+  f <- tempfile(fileext = ".csv")
+  utils::write.csv(raw, f, row.names = FALSE)
+  f
+}
+
+test_that("a 1.1.2 fit that used a key audits clean", {
+  f <- audit_fixture(); on.exit(unlink(f), add = TRUE)
+  m <- irtc(f, model = "2PL", key = c(Q1 = 2, Q2 = 3, Q3 = 1, Q4 = 2),
+            id = "pid", verbose = FALSE)
+  a <- irtc_audit_scoring(m)
+  expect_s3_class(a, "irtc_audit")
+  expect_equal(a$status, "ok_fixed")
+  expect_equal(a$n_scored, 4L)
+  expect_length(a$affected_items, 0L)
+})
+
+test_that("an archived fit from before the fix is flagged with its items", {
+  f <- audit_fixture(); on.exit(unlink(f), add = TRUE)
+  m <- irtc(f, model = "2PL", key = c(Q1 = 2, Q2 = 3, Q3 = 1, Q4 = 2),
+            id = "pid", verbose = FALSE)
+  archived <- m
+  archived$usability$package_version <- "1.1.1"
+  a <- irtc_audit_scoring(archived)
+  expect_equal(a$status, "affected")
+  expect_setequal(a$affected_items, c("Q1", "Q2", "Q3", "Q4"))
+  expect_true(all(a$items$categories_renumbered))
+  expect_equal(a$items$original_categories[1], "1,2,3,4")
+})
+
+test_that("an unstamped object is reported as at risk, not as broken", {
+  f <- audit_fixture(); on.exit(unlink(f), add = TRUE)
+  m <- irtc(f, model = "2PL", key = c(Q1 = 2, Q2 = 3, Q3 = 1, Q4 = 2),
+            id = "pid", verbose = FALSE)
+  legacy <- m
+  legacy$usability$package_version <- NULL
+  legacy$usability$recode_map <- NULL
+  a <- irtc_audit_scoring(legacy)
+  expect_equal(a$status, "affected_if_before_1.1.2")
+  expect_setequal(a$affected_items, c("Q1", "Q2", "Q3", "Q4"))
+})
+
+test_that("an analysis on already-scored data is never flagged", {
+  set.seed(83); n <- 150
+  sc <- data.frame(pid = seq_len(n), Q1 = rbinom(n, 1, .5), Q2 = rbinom(n, 1, .5),
+                   Q3 = rbinom(n, 1, .5), Q4 = rbinom(n, 1, .5))
+  m <- irtc(sc, model = "2PL", id = "pid", verbose = FALSE)
+  a <- irtc_audit_scoring(m)
+  expect_equal(a$status, "not_scored")
+  ## even if it had come from an old version
+  old <- m; old$usability$package_version <- "1.1.0"
+  expect_equal(irtc_audit_scoring(old)$status, "not_scored")
+})
+
+test_that("a key on already-0-based items is not flagged", {
+  set.seed(89); n <- 150
+  raw <- data.frame(pid = seq_len(n),
+                    Q1 = sample(0:3, n, TRUE), Q2 = sample(0:3, n, TRUE),
+                    Q3 = sample(0:2, n, TRUE), Q4 = sample(0:2, n, TRUE))
+  f <- tempfile(fileext = ".csv"); on.exit(unlink(f), add = TRUE)
+  utils::write.csv(raw, f, row.names = FALSE)
+  m <- irtc(f, model = "2PL", key = c(Q1 = 1, Q2 = 2, Q3 = 1, Q4 = 0),
+            id = "pid", verbose = FALSE)
+  old <- m; old$usability$package_version <- "1.1.1"
+  expect_equal(irtc_audit_scoring(old)$status, "not_affected")
+})
+
+test_that("the audit accepts every artefact a project is likely to keep", {
+  f <- audit_fixture(); on.exit(unlink(f), add = TRUE)
+  m <- irtc(f, model = "2PL", key = c(Q1 = 2, Q2 = 3, Q3 = 1, Q4 = 2),
+            id = "pid", verbose = FALSE)
+  expect_s3_class(irtc_audit_scoring(irtc_results(m)), "irtc_audit")
+  d <- irtc_score(irtc_read(f, id = "pid", verbose = FALSE),
+                  key = c(Q1 = 2, Q2 = 3, Q3 = 1, Q4 = 2))
+  expect_equal(irtc_audit_scoring(d)$status, "ok_fixed")
+  ## a bare cleaning log, all that survives inside an exported workbook
+  lg <- irtc_audit_scoring(m$usability$data_log)
+  expect_equal(lg$status, "affected_if_before_1.1.2")
+  err <- tryCatch(irtc_audit_scoring(42), error = function(e) e)
+  expect_equal(err$code, "E411")
+})
