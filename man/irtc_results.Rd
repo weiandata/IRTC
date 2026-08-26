@@ -12,18 +12,24 @@ Column names are fixed English snake_case identifiers and never depend on
 the language option. \code{irtc_json} exports the same content as JSON
 (requires the optional \pkg{jsonlite} package).
 
-Schema v1.1 components: \code{model_info} (one row: schema and package
+Schema v1.2 components: \code{model_info} (one row: schema and package
 version, model, sizes, deviance, AIC/BIC, EAP reliability, iterations,
 and \code{dimension_names} when a Q matrix was supplied),
 \code{items} (per item: parameters, classical statistics, fit, quality
-rating and bilingual reasons/advice, plus a \code{status} column and,
-for polytomous items, semantic step difficulties and rare-category
-annotations), \code{persons} (per person: ID, number answered, raw
+rating and bilingual reasons/advice, plus a \code{status} column, for
+polytomous items semantic step difficulties and rare-category
+annotations, and for multidimensional models \code{dimension} and
+\code{n_loadings}), \code{persons} (per person: ID, number answered, raw
 score, EAP, SE, percentile, T score; ability/SE headers use the Q
 dimension names when available), \code{cleaning_log} and
 \code{check_issues} (present when the model was fitted via
-\code{\link{irtc}}). Schema 1.1 is additive over 1.0: existing column
-names and meanings are unchanged. Items declared in the Q matrix but not
+\code{\link{irtc}}). Schema 1.2 is additive over 1.1: existing column
+names and meanings are unchanged.
+
+Item statistics honour the sampling weights given to \code{\link{irtc}},
+so they share one population with the IRT parameters. The person-level
+\code{percentile} and \code{t_score} columns are always unweighted and
+describe the respondents rather than the weighted population. Items declared in the Q matrix but not
 estimated keep a row with \code{status} \code{"dropped_no_response"} or
 \code{"declared_not_estimated"}. See the package file
 \code{inst/llms.txt} for the full schema reference.

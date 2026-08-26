@@ -15,7 +15,7 @@ discrimination (usually a wrong answer key) always leads to
 \code{"revise"}.
 }
 \usage{
-irtc_quality(mod, resp = NULL, thresholds = NULL)
+irtc_quality(mod, resp = NULL, thresholds = NULL, weights = NULL)
 
 irtc_quality_thresholds()
 
@@ -25,6 +25,10 @@ irtc_quality_thresholds()
 \item{mod}{A fitted \code{irtc} model object.}
 \item{resp}{The response data; only needed when the model object does not
     store it (streaming engine).}
+\item{weights}{Optional case (sampling) weights, one per person, passed on
+    to \code{\link{irtc_ctt}} and \code{\link{irtc_itemfit}} so that both
+    halves of the rating rest on the same population. Defaults to the case
+    weights stored on the model.}
 \item{thresholds}{An optional named list overriding entries of
     \code{irtc_quality_thresholds()}: \code{p_hard} (default 0.10),
     \code{p_easy} (0.95), \code{discr_poor} (0.15), \code{discr_weak}

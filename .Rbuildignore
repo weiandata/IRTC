@@ -17,5 +17,6 @@
 ^docs$
 ^examples$
 ^scripts$
+^Rpackage$
 ^cran-comments[.]md$
 ^\.waef$

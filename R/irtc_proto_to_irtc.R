@@ -9,7 +9,8 @@
 # Build the irtc object. z = list(a,b,Sigma,deviance,iter,eap,EAP.rel); dim_of,
 # maxK, resp, CALL supplied by the caller. (between-item structure)
 irtc_proto_build_object <- function(z, dim_of, maxK, resp, CALL = NULL,
-                                    irtmodel = "2PL", control = list(snodes = 0)) {
+                                    irtmodel = "2PL", control = list(snodes = 0),
+                                    pid = NULL) {
   I <- ncol(resp); N <- nrow(resp); D <- max(dim_of)
   a <- z$a; b <- z$b; Sigma <- z$Sigma
 
@@ -32,23 +33,31 @@ irtc_proto_build_object <- function(z, dim_of, maxK, resp, CALL = NULL,
   npar_cov  <- D * (D - 1) / 2               # correlations (unit variances fixed)
   Npars <- npar_item + npar_cov
   dev <- z$deviance; loglike <- -dev / 2
-  ic <- list(n = N, deviance = dev, loglike = loglike, logprior = 0, logpost = loglike,
+  # A one-row data.frame, exactly like the grid engine's irtc_mml_ic() output, so
+  # that generic code reading mod$ic does not have to branch on the engine.
+  ic <- data.frame(n = N, deviance = dev, loglike = loglike, logprior = 0,
+             logpost = loglike,
              Nparsxsi = I * (maxK - 1), NparsB = I, Nparsbeta = 0, Nparscov = npar_cov,
              np = Npars, Npars = Npars,
              AIC = dev + 2 * Npars, AIC3 = dev + 3 * Npars,
              BIC = dev + log(N) * Npars, aBIC = dev + log((N + 2) / 24) * Npars,
              CAIC = dev + (log(N) + 1) * Npars, AICc = dev + 2 * Npars +
-               2 * Npars * (Npars + 1) / (N - Npars - 1), GHP = NA)
+               2 * Npars * (Npars + 1) / (N - Npars - 1), GHP = NA_real_)
 
   # item summary table
   item <- data.frame(item = paste0("I", 1:I), N = colSums(!is.na(resp)),
                      M = colMeans(resp, na.rm = TRUE), slope = a)
 
-  # person (EAP) table
+  # person (EAP) table. pid and pweight mirror the grid engine: the caller's
+  # person identifiers and the case weights normalized to sum N.
   eap <- z$eap; if (is.null(eap)) eap <- matrix(NA_real_, N, D)
-  person <- data.frame(pid = seq_len(N), case = seq_len(N), pweight = 1,
+  eap_sd <- z$eap_sd; if (is.null(eap_sd)) eap_sd <- matrix(NA_real_, N, D)
+  if (is.null(pid) || length(pid) != N) pid <- seq_len(N)
+  pweight <- z$pweights; if (is.null(pweight) || length(pweight) != N) pweight <- rep(1, N)
+  person <- data.frame(pid = pid, case = seq_len(N), pweight = pweight,
                        score = rowSums(resp, na.rm = TRUE), max = rowSums(!is.na(resp)))
   for (d in 1:D) person[[paste0("EAP.Dim", d)]] <- eap[, d]
+  for (d in 1:D) person[[paste0("SD.EAP.Dim", d)]] <- eap_sd[, d]
   EAP.rel <- z$EAP.rel; if (is.null(EAP.rel)) EAP.rel <- rep(NA_real_, D)
 
   res <- list(xsi = xsi, beta = matrix(0, 1, D), variance = Sigma, item = item,
@@ -56,7 +65,8 @@ irtc_proto_build_object <- function(z, dim_of, maxK, resp, CALL = NULL,
               A = NULL, B = B, AXsi = NULL, nitems = I, maxK = maxK, nstud = N,
               ndim = D, deviance = dev, ic = ic, control = control,
               irtmodel = irtmodel, iter = z$iter, printxsi = FALSE, G = 1L,
-              groups = 1L, formulaA = NULL, CALL = CALL, nnodes = NA, YSD = FALSE)
+              groups = 1L, formulaA = NULL, CALL = CALL, nnodes = NA, YSD = FALSE,
+              pid = pid, pweights = pweight)
   class(res) <- "irtc"
   res
 }
@@ -68,7 +78,7 @@ irtc_proto_run_and_build <- function(resp, dim_of, maxK = 2L, Q = 21L,
         adaptive_threshold = 1e-6, reg = NULL, Y = NULL, group = NULL, pweights = NULL,
         group_structure = "full", fast = FALSE, mass_budget = 1e-3, burnin = 3L,
         verify = "stratified", verify_n = 3000, verify_seed = 1, refine = FALSE,
-        tol = list(), CALL = NULL, control = list(snodes = 0)) {
+        tol = list(), CALL = NULL, control = list(snodes = 0), pid = NULL) {
   n_threads <- max(1L, min(as.integer(n_threads)[1L], 2L))
   run_fit <- function(mb)
     irtc_mml_fast_proto(resp, dim_of, maxK = maxK, Q = Q, nodes = nodes,
@@ -91,7 +101,7 @@ irtc_proto_run_and_build <- function(resp, dim_of, maxK = 2L, Q = 21L,
     }
   }
   obj <- irtc_proto_build_object(z, dim_of, maxK, resp, CALL = CALL,
-                                 irtmodel = irtmodel, control = control)
+                                 irtmodel = irtmodel, control = control, pid = pid)
   obj$a <- z$a                                  # keep engine-natural slopes for checks
   obj$regularization <- z$regularization
   obj$beta <- z$beta; obj$n_eff <- z$n_eff

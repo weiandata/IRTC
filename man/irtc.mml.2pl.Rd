@@ -58,11 +58,51 @@ When \code{fast=TRUE} the streaming engine prunes quadrature nodes by a calibrat
 }
 \value{
 An object of class \code{irtc} (see \code{\link{irtc.mml}}) with, in addition,
-the estimated slope array \code{B} and the slope parameter vector. Streaming-engine
+the estimated slope array \code{B} and the slope parameter vector. \code{ic} is a
+one-row data frame from either engine. The \code{person} table carries the
+caller's \code{pid}, the case weights normalised to mean 1, the EAP estimates and
+their posterior standard errors (\code{SD.EAP.Dim1}, ...). Streaming-engine
 fits also carry a \code{routing} component (chosen engine and reasoning) and, when
 \code{fast=TRUE} with verification on, an \code{accuracy_report}: a measured,
 stratified approximation check (per-metric error quantiles plus a \code{met}
 verdict), \emph{not} a strict mathematical error bound.
+}
+\section{Missing responses}{
+Both engines treat \code{NA} as missing at random: the item contributes a
+likelihood factor of 1 for that person and no expected counts, so no case has
+to be dropped. Persons with no responses at all are kept and sit at the prior
+mean.
+}
+\section{Comparing models}{
+The reported \code{deviance}, \code{loglike} and the information criteria in
+\code{ic} are marginal log-probabilities of the discretised model, on the same
+scale for both engines. They may therefore be compared across the \code{"grid"}
+and \code{"streaming"} paths, across different \code{ndim}, and across
+different \code{control$nodes} settings, up to the quadrature accuracy itself.
+Use \code{\link{logLik}}, \code{AIC}, \code{BIC} or \code{anova} on the
+fitted objects.
+
+Two cautions. First, quadrature accuracy is finite: comparisons are only as
+good as the node grid, so keep the nodes fixed when comparing models. Second,
+when an estimated latent correlation reaches the boundary the model has
+degenerated to a lower-dimensional one; a warning with code \code{W427} is
+raised, and the criteria and EAP reliabilities of such a fit are computed on a
+grid that can no longer resolve the collapsed covariance.
+}
+\section{Model choice for dichotomous items}{
+For strictly dichotomous (0/1) data \code{irtmodel = "GPCM"} is mathematically
+equivalent to \code{irtmodel = "2PL"}: with two categories the generalised
+partial credit model reduces to the two-parameter logistic. Switching to
+\code{"GPCM"} therefore does not by itself change the model; only
+\code{ndim} / \code{Q} do.
+}
+\section{Memory}{
+The grid engine materialises an \code{N} by \code{nodes^ndim} posterior
+matrix. When the prediction exceeds the memory available to the session,
+estimation stops with an error of class \code{irtc_error_estimation} (code
+\code{E409}) naming the predicted size and pointing at
+\code{method = "streaming"}, rather than failing later inside an allocation.
+\code{method = "auto"} already routes such models to the streaming engine.
 }
 \seealso{
 \code{\link{irtc.mml}} for fixed-slope (Rasch / PCM / RSM) models.

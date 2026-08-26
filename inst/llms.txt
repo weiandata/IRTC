@@ -46,14 +46,15 @@ optional partial-credit/max-score column). irtc_align_q(data, q,
 on_mismatch="warn"|"error") intersects Q items with the data items
 (warnings W420 Q-only / W421 data-only).
 
-## irtc_results(mod) schema v1.1 (list of data frames; additive over 1.0)
+## irtc_results(mod) schema v1.2 (list of data frames; additive over 1.1)
 
 - model_info (1 row): schema_version, package_version, model, n_persons,
   n_items, n_dimensions, deviance, n_parameters, aic, bic, eap_reliability,
   iterations, dimension_names (pipe-separated; only when a Q matrix was used)
 - items (1 row per item): item_id, model, n_obs, p_value, slope_a,
   difficulty_b, se_b, tau_k..., (polytomous only) b_partial/b_full or
-  b_step1..b_stepK, discr_ctt, outfit, infit,
+  b_step1..b_stepK, (multidimensional only) dimension, n_loadings,
+  discr_ctt, outfit, infit,
   rating (good|acceptable|review|revise), reasons_en, reasons_zh,
   advice_en, advice_zh, status (estimated|dropped_no_response|
   declared_not_estimated), and when categories were rare:
@@ -61,7 +62,9 @@ on_mismatch="warn"|"error") intersects Q items with the data items
   categories_collapsed, prior_dominated
 - persons (1 row per person, same order as input rows): person_id,
   n_answered, raw_score, eap[_dimD or _<dimname>], se[...], percentile[...],
-  t_score[...] (headers use Q dimension names when a Q matrix was supplied)
+  t_score[...] (headers use Q dimension names when a Q matrix was supplied).
+  person_id is the id passed to irtc(id=). percentile and t_score are always
+  unweighted, so they describe the respondents, not the weighted population.
 - cleaning_log: step, code, message_en, message_zh
 - check_issues: code, severity (error|warning|info), scope, where,
   message_en, message_zh, fix_en, fix_zh
@@ -83,15 +86,33 @@ Typical automated repairs:
 - E407 data check failed -> inspect e$data$check$issues and fix per row
 - E501 file exists -> retry with overwrite=TRUE
 
+## Sampling weights
+
+irtc(weights=) forwards the weights to the MML estimation and to
+irtc_ctt() / irtc_itemfit() / irtc_quality() / irtc_param_table(), so item
+statistics, fit and quality ratings share one weighted population with the IRT
+parameters. Each of those functions also takes weights= directly and defaults
+to the weights stored on the model. Constant weights reproduce the unweighted
+results exactly. IRTC < 1.1.2 computed the classical statistics unweighted
+even when the IRT parameters were weighted.
+
 ## Interpretation defaults (irtc_quality_thresholds())
 
 p_value flagged <0.10 or >0.95; item-rest correlation flagged <0.25 (poor
 <0.15, negative = probable key error); infit/outfit normal 0.7-1.3, severe
 outside 0.5-1.5. Ratings: good | acceptable | review | revise.
 
-## Excel linking table (irtc_excel file 2, schema v1.0)
+## Excel linking table (irtc_excel file 2, schema v1.1)
 
 Fixed columns: schema_version, analysis_id, model, item_id, n_obs, p_value,
-slope_a, difficulty_b, se_b, tau_1...tau_k. Anchor items must keep identical
-item_id across administrations; difficulty_b is on the logit scale with the
-"cases" constraint (person mean = 0) unless changed via constraint=.
+slope_a, difficulty_b, se_b, tau_1...tau_k, plus dimension and n_loadings for
+a multidimensional model. Anchor items must keep identical item_id across
+administrations; difficulty_b is on the logit scale with the "cases"
+constraint (person mean = 0) unless changed via constraint=.
+
+slope_a and difficulty_b are read from the dimension the item loads on, named
+in dimension. n_loadings > 1 means the item loads on several dimensions at
+once and slope_a is the sum of those loadings, i.e. a composite rather than a
+single slope. Tables written by IRTC < 1.1.2 from a multidimensional fit
+report slope_a = 0 and difficulty_b = NA for every item not loading on the
+first dimension and must be regenerated before use.

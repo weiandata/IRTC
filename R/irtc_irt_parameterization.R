@@ -43,7 +43,10 @@ irtc_irt_parameterization <- function(resp, maxK, B, AXsi, irtmodel="2PL",
         colnames(item_irt) <- c("alpha", "beta", threshold_labels)
         item_irt <- data.frame(item=items, item_irt)
 
-        alpha <- B[, 2, 1]
+        ## the slope on the dimension the item actually loads on; reading
+        ## dimension 1 unconditionally gives alpha = 0 (and beta = NaN) for
+        ## every item of a multidimensional model that loads elsewhere
+        alpha <- irtc_item_loading(B)$slope
         item_irt$alpha <- alpha
         xsi_irt <- AXsi / alpha
 

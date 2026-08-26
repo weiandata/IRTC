@@ -10,7 +10,7 @@
 ## snake_case identifiers and never depend on the language option.
 ## Schema version: irtc_results_schema_version.
 
-irtc_results_schema_version <- "1.1"
+irtc_results_schema_version <- "1.2"
 
 irtc_results <- function(mod, resp=NULL)
 {

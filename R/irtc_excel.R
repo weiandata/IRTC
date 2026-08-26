@@ -13,7 +13,7 @@
 ##                                     into a master sample sheet
 ## Requires the optional 'openxlsx' package (Suggests).
 
-irtc_excel_schema_version <- "1.0"
+irtc_excel_schema_version <- "1.1"
 
 irtc_excel <- function(mod, dir=".", prefix="IRTC", lang=irtc_lang(),
     resp=NULL, overwrite=FALSE, verbose=TRUE)
@@ -245,13 +245,19 @@ irtc_excel_quality <- function(mod, path, lang, resp)
 ## 2. Item parameter workbook (frozen schema for cross-year linking)
 ## ---------------------------------------------------------------------------
 
-irtc_param_table <- function(mod, resp=NULL)
+irtc_param_table <- function(mod, resp=NULL, weights=NULL)
 {
+    ## p_value sits in the same row as the IRT slope and difficulty, which are
+    ## estimated with the sampling weights, so it has to be weighted too; this
+    ## is the frozen schema used for cross-year linking. Defaults to the case
+    ## weights stored on the model.
+    if (is.null(weights)) weights <- mod$pweights
     AXsi <- irtc_extract_axsi(mod)
     B <- mod$B
     n_items <- dim(B)[1L]
     maxK <- dim(B)[2L]
-    alpha <- B[, 2L, 1L]
+    load <- irtc_item_loading(B)
+    alpha <- load$slope
     item_names <- if (!is.null(resp)) colnames(resp) else
         if (!is.null(mod$item$item)) as.character(mod$item$item) else
         paste0("I", seq_len(n_items))
@@ -284,10 +290,11 @@ irtc_param_table <- function(mod, resp=NULL)
     n_obs <- if (!is.null(resp)) colSums(!is.na(resp)) else
         if (!is.null(mod$item$N)) mod$item$N else rep(NA_integer_, n_items)
     pvalue <- if (!is.null(resp)) {
+        w <- irtc_prep_case_weights(weights, nrow(as.matrix(resp)))
         vapply(as.data.frame(resp), function(col) {
             vals <- col[!is.na(col)]
             if (length(vals) == 0L || max(vals) == 0) NA_real_ else
-                mean(vals) / max(vals)
+                irtc_weighted_mean(col, w) / max(vals)
         }, numeric(1L))
     } else rep(NA_real_, n_items)
 
@@ -304,6 +311,15 @@ irtc_param_table <- function(mod, resp=NULL)
         se_b=round(se_beta, 4),
         stringsAsFactors=FALSE, row.names=NULL
     )
+    ## Which latent dimension the slope belongs to. Constant 1 for a
+    ## unidimensional model; for a multidimensional one it is the dimension the
+    ## item loads on, so slope_a and difficulty_b are never ambiguous.
+    if (dim(B)[3L] > 1L) {
+        dim_names <- irtc_dim_names(mod, dim(B)[3L])
+        out$dimension <- if (is.null(dim_names)) load$dim else
+            ifelse(is.na(load$dim), NA_character_, dim_names[load$dim])
+        out$n_loadings <- load$n_loadings
+    }
     if (ncol(tau) > 0L) {
         tau <- round(tau, 4)
         colnames(tau) <- paste0("tau_", seq_len(ncol(tau)))

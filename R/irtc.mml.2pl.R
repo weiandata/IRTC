@@ -147,7 +147,7 @@ irtc.mml.2pl <- function( resp, Y=NULL, group=NULL,  irtmodel="2PL",
             } else {
                 con$group_structure
             },
-            reg=con$reg, CALL=CALL, control=con
+            reg=con$reg, CALL=CALL, control=con, pid=pid
         )
         result$routing <- grid_routing
         if (verbose) {
@@ -158,6 +158,11 @@ irtc.mml.2pl <- function( resp, Y=NULL, group=NULL,  irtmodel="2PL",
         }
         return(result)
     }
+
+    irtc_grid_memory_guard(
+        N=routing_people, nnodes=routing_nodes^routing_dimensions,
+        D=routing_dimensions, streaming_possible=simple_structure
+    )
 
     if (progress) {
         cat(display_rule)

@@ -1,3 +1,161 @@
+# IRTC 1.1.2
+
+Correctness release for the multidimensional streaming estimation path,
+prompted by a production survey analysis (85,035 respondents, 10 dichotomous
+items, three content dimensions, sampling weights). Three of the fixes change
+reported numbers; see "Numerical changes" below. The `irtc()` / `irtc.mml()` /
+`irtc.mml.2pl()` signatures are unchanged and no argument changes meaning.
+
+## Bug fixes
+
+* The streaming engine no longer crashes the R session when the response
+  matrix contains `NA`. The C++ E-step indexed the category probability array
+  with the raw response code, so a missing value (`NA_INTEGER`) produced an
+  out-of-bounds read and a segmentation fault. Missing responses are now
+  handled natively, exactly as the grid engine handles them: the item
+  contributes a likelihood factor of 1 and no expected counts. Complete-case
+  deletion before a multidimensional fit is no longer necessary, and persons
+  with no responses at all are kept at the prior mean.
+
+* The streaming engine's `deviance`, `loglike`, `AIC`, `BIC`, `aBIC`, `CAIC`
+  and `AICc` were offset by `n * ndim * log(1 / h)`, where `h` is the
+  quadrature node spacing. The quadrature weights were the multivariate
+  normal *density* at the nodes rather than probability *mass*, and a density
+  summed over a grid of spacing `h` is about `h^-ndim` instead of 1. The
+  weights are now normalised to sum to one. The reported log-likelihood is
+  again a genuine log-probability, and it is comparable across the two
+  engines, across dimensionalities and across `control$nodes` settings. This
+  silently invalidated any comparison that crossed `ndim` or engines --
+  including `anova()` and `logLik()` -- so results from earlier versions that
+  relied on such a comparison should be recomputed.
+
+* Log-likelihoods no longer turn positive (and deviances negative) when the
+  estimated latent covariance degenerates. As correlations approach the
+  boundary the normal density grows like `1 / sqrt(det(Sigma))`, which the
+  missing mass normalisation passed straight into the reported value. The
+  quadrature weights are additionally computed on the log scale, so a
+  near-singular covariance can no longer overflow or underflow.
+
+* Reaching the boundary now raises a warning (code `W427`) instead of passing
+  silently. It usually carries a substantive finding -- the dimensions are
+  not separable in these data and the model has degenerated to a
+  lower-dimensional one -- and it also flags that the information criteria and
+  EAP reliabilities of that fit rest on a grid which can no longer resolve the
+  collapsed covariance.
+
+* `irtc_param_table()`, and hence `irtc_results()` and the item-parameter
+  workbook of `irtc_excel()`, read the slope from dimension 1 regardless of
+  which dimension an item actually loaded on. In a multidimensional model
+  every item that did not load on the first dimension was reported with
+  `slope_a = 0` and `difficulty_b = NA`. Parameters are now read from the
+  item's own loading dimension. The same fix applies to the `item_irt` table
+  of the grid engine. Since the item-parameter workbook is the documented
+  interface for cross-year linking, banks built from a multidimensional fit
+  with an earlier version should be regenerated.
+
+* The streaming path lost the person identifiers passed through `irtc(id=)` /
+  `irtc.mml.2pl(pid=)`, returning row numbers instead, so person-level output
+  could not be joined back to the sample by id. It also reported
+  `person$pweight` as 1 for every case even though the weights were used in
+  estimation. Both are now carried through.
+
+* `irtc_ctt()`, `irtc_itemfit()` and `irtc_quality()` ignored the sampling
+  weights, so a single `irtc()` results table mixed weighted IRT parameters
+  with unweighted classical difficulties, discriminations, fit statistics and
+  the quality ratings derived from them. In the survey that prompted this
+  release one item's pass rate differed by 7.8 percentage points between the
+  two bases, enough to change its difficulty label.
+
+## New features
+
+* `irtc_ctt()`, `irtc_itemfit()`, `irtc_quality()` and `irtc_param_table()`
+  gain a `weights=` argument. `irtc()` passes the sampling weights it already
+  forwards to the estimation, so the whole results table now rests on one
+  population. `irtc_itemfit()`, `irtc_quality()` and `irtc_param_table()`
+  default to the case weights stored on the model. Constant weights reproduce
+  the unweighted statistics exactly, so unweighted analyses are unaffected.
+  `irtc_ctt()` reports an `N_weighted` column and a `weighted` flag.
+
+* The streaming engine now returns posterior standard errors. The person
+  table gains `SD.EAP.Dim1`, ..., so `irtc_results()` and `irtc_excel()`
+  produce the `se_*` columns for multidimensional fits that previously only
+  the grid engine could supply.
+
+* `irtc_param_table()` gains a `dimension` column for multidimensional models,
+  naming the dimension each item loads on (using the Q-matrix column headers
+  when available), plus `n_loadings`. An item loading on several dimensions at
+  once has no single slope; `slope_a` is then the sum of its loadings and
+  `n_loadings` is above 1, marking the value as a composite.
+
+* Choosing `method = "grid"` for a model whose posterior matrix cannot fit in
+  memory now fails immediately with a structured error (code `E409`) naming
+  the predicted size and pointing at `method = "streaming"`, instead of an
+  opaque `vector memory limit ... reached` from inside the E-step.
+  `method = "auto"` already routed such models to the streaming engine and is
+  unaffected.
+
+## Numerical changes
+
+Item parameters, latent covariances and EAP estimates are unchanged: the
+quadrature weight normalisation cancels out of every posterior quantity. What
+changes is what gets reported.
+
+* `deviance` / `loglike` and all information criteria from the streaming
+  engine shift by the constant described above; the grid engine is unchanged
+  and was already correct.
+
+* The streaming engine's `EAP.rel` now uses the same definition as the grid
+  engine -- the case-weighted ratio of true-score variance to total variance
+  -- instead of an unweighted `var(EAP) / diag(Sigma)` proxy that ignored both
+  the case weights and the posterior error variance. In the degenerate fit
+  that prompted this, the three collapsed dimensions reported 0.63 where the
+  equivalent unidimensional model reported 0.72; they now agree.
+
+* Weighted analyses see the classical statistics, item fit and quality
+  ratings move to the weighted basis, as described above.
+
+## Documentation
+
+* `?irtc.mml.2pl` documents the missing-response handling, which comparisons
+  the `ic` values support, the memory guard, and that `irtmodel = "GPCM"` is
+  mathematically equivalent to `"2PL"` for strictly dichotomous items -- so
+  switching to GPCM does not by itself change the model, only `ndim` / `Q` do.
+
+* `?irtc_itemfit` states that the residuals are evaluated at the EAP person
+  estimates, for comparison against software that uses WLE estimates.
+
+* `?irtc_excel` notes that the person-level `percentile` and `t_score`
+  columns are always computed on the unweighted sample, so they describe the
+  respondents rather than the weighted population.
+
+* `inst/llms.txt` gains a section on how the sampling weights propagate.
+
+* Upgrading from 0.1.0: the estimation core (`irtc.mml()`, `irtc.mml.2pl()`)
+  is unchanged and no 0.1.0 script needs editing. Everything added since is
+  the optional usability layer on top -- `irtc()`, `irtc_results()`,
+  `irtc_report()`, `irtc_quality()`, `irtc_excel()` and friends -- described
+  under 1.0.0 and 1.1.0 below.
+
+## Schema versions
+
+* `irtc_results()` advances to schema 1.2 and the `irtc_excel()` linking
+  workbook to 1.1. Both are additive: existing column names and meanings are
+  unchanged, and the new `dimension` / `n_loadings` columns appear only for
+  multidimensional models.
+
+## Internal
+
+* `ic` is now a one-row data frame from both engines; the streaming engine
+  previously returned a plain list, so code reading `mod$ic` had to branch on
+  the engine.
+
+* New regression tests in `tests/testthat/test-streaming-quadrature.R` lock
+  down each of the findings above: node-count invariance of the reported
+  log-likelihood, agreement between the grid and streaming deviance on the
+  same model, `NA` handling, the degenerate-covariance behaviour, the
+  id/weight round trip, multidimensional parameter extraction, and the
+  weighted statistics reducing to the unweighted ones under constant weights.
+
 # IRTC 1.1.1
 
 Packaging-only release addressing the CRAN incoming pre-test results for

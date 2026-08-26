@@ -258,11 +258,18 @@ irtc <- function(data, model, key=NULL, rules=NULL, q=NULL,
         rare_categories=rare$info,
         rare_mode=rare_categories)
     if (quality) {
-        usability$ctt <- tryCatch(irtc_ctt(resp), error=function(e) NULL)
-        usability$itemfit <- tryCatch(irtc_itemfit(mod, resp=resp),
+        ## Sampling weights reached the MML estimation through 'pweights'; the
+        ## classical statistics, item fit and quality ratings printed alongside
+        ## the IRT parameters have to use them too, or one results table would
+        ## describe two different populations.
+        qw <- fit_args$pweights
+        usability$ctt <- tryCatch(irtc_ctt(resp, weights=qw),
             error=function(e) NULL)
-        usability$quality <- tryCatch(irtc_quality(mod, resp=resp),
+        usability$itemfit <- tryCatch(irtc_itemfit(mod, resp=resp, weights=qw),
             error=function(e) NULL)
+        usability$quality <- tryCatch(irtc_quality(mod, resp=resp, weights=qw),
+            error=function(e) NULL)
+        usability$weighted_statistics <- !is.null(qw)
     }
     mod$usability <- usability
     mod

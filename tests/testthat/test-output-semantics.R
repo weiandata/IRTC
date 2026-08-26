@@ -91,11 +91,11 @@ test_that("results persons use Q dimension names and expose them", {
     expect_equal(res$model_info$dimension_names, "verbal|spatial")
 })
 
-test_that("results schema version is 1.1", {
+test_that("results schema version is 1.2", {
     resp <- irtc_test_sim_2d(n=120)
     mod <- irtc(resp, model="1PL", verbose=FALSE)
     res <- irtc_results(mod)
-    expect_equal(res$model_info$schema_version, "1.1")
+    expect_equal(res$model_info$schema_version, "1.2")
 })
 
 test_that("Q-only items keep a declared_not_estimated row in results", {

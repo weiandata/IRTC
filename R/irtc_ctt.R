@@ -8,8 +8,12 @@
 ## Classical test theory statistics: item difficulty (p-values), corrected
 ## item-total correlations, Cronbach's alpha and alpha-if-item-deleted.
 ## These feed the plain-language item quality table.
+##
+## All statistics honour 'weights'. In a complex-sample survey the IRT
+## parameters are estimated with the sampling weights, so reporting unweighted
+## classical difficulties next to them mixes two populations in a single table.
 
-irtc_ctt <- function(x, key=NULL)
+irtc_ctt <- function(x, key=NULL, weights=NULL)
 {
     if (inherits(x, "irtc_data")) {
         resp <- x$resp
@@ -51,13 +55,17 @@ irtc_ctt <- function(x, key=NULL)
 
     resp_mat <- as.matrix(resp)
     n_items <- ncol(resp_mat)
+    w <- irtc_prep_case_weights(weights, nrow(resp_mat))
+    weighted <- !is.null(weights)
     item_max <- apply(resp_mat, 2L, function(col) {
         vals <- col[!is.na(col)]
         if (length(vals) == 0L) NA_real_ else max(vals)
     })
 
     n_obs <- colSums(!is.na(resp_mat))
-    item_mean <- colMeans(resp_mat, na.rm=TRUE)
+    n_obs_w <- colSums((!is.na(resp_mat)) * w)
+    item_mean <- vapply(seq_len(n_items), function(j)
+        irtc_weighted_mean(resp_mat[, j], w), numeric(1L))
     pvalue <- ifelse(!is.na(item_max) & item_max > 0,
         item_mean / item_max, NA_real_)
 
@@ -70,22 +78,23 @@ irtc_ctt <- function(x, key=NULL)
         use <- !is.na(resp_mat[, j]) & n_answered > 1L
         if (sum(use) > 2L && stats::sd(resp_mat[use, j]) > 0 &&
             stats::sd(rest[use]) > 0) {
-            discr[j] <- stats::cor(resp_mat[use, j], rest[use])
+            discr[j] <- irtc_weighted_cor(resp_mat[use, j], rest[use], w[use])
         }
     }
 
     ## Cronbach's alpha (pairwise-complete covariances)
-    alpha <- irtc_ctt_alpha(resp_mat)
+    alpha <- irtc_ctt_alpha(resp_mat, w)
     alpha_drop <- rep(NA_real_, n_items)
     if (n_items > 2L) {
         for (j in seq_len(n_items)) {
-            alpha_drop[j] <- irtc_ctt_alpha(resp_mat[, -j, drop=FALSE])
+            alpha_drop[j] <- irtc_ctt_alpha(resp_mat[, -j, drop=FALSE], w)
         }
     }
 
     items <- data.frame(
         item=colnames(resp_mat),
         N=n_obs,
+        N_weighted=if (weighted) round(n_obs_w, 2) else n_obs,
         miss_rate=round(1 - n_obs / nrow(resp_mat), 4),
         max_score=item_max,
         M=round(item_mean, 4),
@@ -95,21 +104,23 @@ irtc_ctt <- function(x, key=NULL)
         stringsAsFactors=FALSE, row.names=NULL
     )
     out <- list(items=items, alpha=alpha, n_persons=nrow(resp_mat),
-        n_items=n_items)
+        n_items=n_items, weighted=weighted)
     class(out) <- "irtc_ctt"
     out
 }
 
-irtc_ctt_alpha <- function(resp_mat)
+irtc_ctt_alpha <- function(resp_mat, w=NULL)
 {
     k <- ncol(resp_mat)
     if (k < 2L) return(NA_real_)
-    cov_mat <- suppressWarnings(stats::cov(resp_mat,
-        use="pairwise.complete.obs"))
-    if (anyNA(cov_mat)) {
+    w <- irtc_prep_case_weights(w, nrow(resp_mat))
+    cov_mat <- irtc_weighted_cov(resp_mat, w)          # pairwise complete
+    if (is.null(cov_mat)) {                            # fall back to complete cases
         complete <- stats::complete.cases(resp_mat)
         if (sum(complete) < 3L) return(NA_real_)
-        cov_mat <- stats::cov(resp_mat[complete, , drop=FALSE])
+        cov_mat <- irtc_weighted_cov(resp_mat[complete, , drop=FALSE],
+            w[complete])
+        if (is.null(cov_mat)) return(NA_real_)
     }
     total_var <- sum(cov_mat)
     if (!is.finite(total_var) || total_var <= 0) return(NA_real_)
@@ -126,6 +137,10 @@ print.irtc_ctt <- function(x, lang=irtc_lang(), ...)
     cat("  Cronbach alpha: ",
         ifelse(is.na(x$alpha), "NA", format(x$alpha, nsmall=3)), "\n",
         sep="")
+    if (isTRUE(x$weighted)) {
+        cat("  ", irtc_tr("Statistics are case-weighted.",
+            "\u4ee5\u4e0b\u7edf\u8ba1\u91cf\u5747\u4e3a\u52a0\u6743\u7ed3\u679c\u3002", lang), "\n", sep="")
+    }
     print(x$items, row.names=FALSE)
     invisible(x)
 }
