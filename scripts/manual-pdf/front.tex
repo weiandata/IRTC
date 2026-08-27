@@ -1,0 +1,158 @@
+% =====================================================================
+%  封面 · 版权页 · 引言
+% =====================================================================
+\pagenumbering{roman}
+
+% ------------------------------------------------------------ 封面
+\begin{titlepage}
+\thispagestyle{IRTCblank}
+\AddToShipoutPictureBG*{%
+  \begin{tikzpicture}[remember picture, overlay]
+    \shade[top color=IRTCinkdeep, bottom color=IRTCinkmid]
+      (current page.south west) rectangle (current page.north east);
+    % 项目反应曲线（ICC）作为封面纹样
+    \begin{scope}
+      \clip (current page.south west) rectangle (current page.north east);
+      \begin{scope}[shift={([xshift=13.2cm, yshift=1.5cm]current page.south west)},
+                    x=1.55cm, y=4.6cm]
+        \foreach \slope/\tint in {1.1/IRTCgoldsoft!58!IRTCinkmid,
+                                   1.9/IRTCteal!62!IRTCinkmid,
+                                   0.7/white!30!IRTCinkmid,
+                                   1.5/IRTCgoldsoft!26!IRTCinkmid}{
+          \draw[\tint, line width=1.1pt]
+            plot[domain=-2.6:4, samples=110, smooth]
+            (\x, {1/(1+exp(-\slope*(\x+0.35)))});}
+      \end{scope}
+    \end{scope}
+    % 顶部与底部装饰线
+    \fill[IRTCgold] ([xshift=2.6cm, yshift=-2.5cm]current page.north west)
+      rectangle ([xshift=4.4cm, yshift=-2.58cm]current page.north west);
+    \fill[IRTCgold!88!IRTCinkdeep] (current page.south west)
+      rectangle ([yshift=0.32cm]current page.south east);
+  \end{tikzpicture}}
+
+\vspace*{1.35cm}
+{\LightFont\fontsize{10.5}{14}\selectfont\color{IRTCgoldsoft}%
+ 惟安数据科技（北京）有限公司 \quad WEIAN DATA TECH}\par
+
+\vspace{2.3cm}
+{\LatinDisplay\fontsize{72}{74}\selectfont\color{white}IRTC}\par
+\vspace{0.35cm}
+{\HeadFont\fontsize{34}{42}\selectfont\color{white}使用手册}\par
+\vspace{0.5cm}
+{\color{IRTCgold}\rule{3.2cm}{1.6pt}}\par
+\vspace{0.5cm}
+{\HeadFont\fontsize{14.5}{22}\selectfont\color{white}%
+ 中文 · 零基础完整版}\par
+\vspace{0.15cm}
+{\LightFont\fontsize{11.5}{18}\selectfont\color{IRTCgoldsoft}%
+ 从一张表格到一份读得懂的报告 —— 项目反应理论（IRT）分析全流程}\par
+
+\vspace{1.15cm}
+\begin{tikzpicture}
+  \node[draw=IRTCgold, line width=0.9pt, rounded corners=3pt,
+        inner xsep=13pt, inner ysep=7pt, text=white,
+        font=\LightFont\fontsize{11.5}{14}\selectfont]
+    {V1.1.2 \ \ 正确性修正版 \ \ · \ \ 已发布于 CRAN};
+\end{tikzpicture}
+
+\vfill
+
+{\color{white!35}\rule{5.5cm}{0.5pt}}\par
+\vspace{0.5cm}
+{\LightFont\fontsize{12}{19}\selectfont\color{white}%
+ \textbf{R 包制作人 / 维护人：马崑翔}\par}
+{\LightFont\fontsize{10.5}{17}\selectfont\color{IRTCgoldsoft}%
+ Kunxiang Ma \ \ · \ \ makunxiang@weiandata.com\par}
+\vspace{0.75cm}
+{\LightFont\fontsize{10.5}{16}\selectfont\color{white}%
+ 著作权人：惟安数据科技（北京）有限公司\par
+ 软件版本 1.1.2（2026-08-27）\quad · \quad 手册发布 2026 年 8 月\par}
+\vspace{0.9cm}
+{\LatinDisplay\fontsize{11}{14}\selectfont\color{IRTCgoldsoft}%
+ \IRTColdtexttt{install.packages("IRTC")}\par}
+\vspace{1.1cm}
+\end{titlepage}
+
+% ------------------------------------------------------------ 版权页
+\thispagestyle{IRTCblank}
+\vspace*{1.2cm}
+{\HeadFont\fontsize{15}{20}\selectfont\color{IRTCink}%
+ \textcolor{IRTCgold}{\rule[-0.05em]{3pt}{0.92em}}\hspace{0.6em}版本与版权信息}\par
+\vspace{0.7cm}
+{\fontsize{10.5}{18}\selectfont\color{IRTCink}
+\begin{tabular}{@{}p{3.2cm}@{}p{11.5cm}@{}}
+\textbf{手册名称} & IRTC 使用手册（中文 · 零基础完整版）\\
+\textbf{对应软件} & IRTC 1.1.2，发布日期 2026-08-27\\
+\textbf{发行渠道} & CRAN（\IRTColdtexttt{install.packages("IRTC")}）；源码仓库 GitHub \mbox{weiandata/IRTC}\\
+\textbf{制作与维护} & 马崑翔（Kunxiang Ma），makunxiang@weiandata.com\\
+\textbf{著作权人} & 惟安数据科技（北京）有限公司，contact@weiandata.com\\
+\textbf{软件许可} & GPL (>= 2)；详见软件包内 LICENSE 与 \IRTColdtexttt{inst/COPYRIGHTS}\\
+\textbf{方法依据} & Adams, Wilson \& Wang (1997), \emph{Applied Psychological Measurement}\\
+\textbf{手册版本} & V1.1.2，2026 年 8 月\\
+\end{tabular}\par}
+
+\vspace{1.0cm}
+\begin{tcolorbox}[enhanced, colback=IRTCmist, colframe=IRTCmist, boxrule=0pt,
+  arc=2pt, left=13pt, right=13pt, top=10pt, bottom=10pt,
+  borderline west={2.8pt}{0pt}{IRTCgold}]
+{\fontsize{10}{16}\selectfont\color{IRTCink}
+\textbf{关于版本一致性}\quad 本手册与 IRTC 1.1.2 逐条核对。\textbf{1.1.2 是正确性修正版}：
+其中三处修正涉及 1.1.1 及更早版本中会静默产生错误结果的输出——多维流式引擎报告的
+对数似然与信息准则、多维模型的题目参数表，以及答案键实际作用的选项。若你用早期版本
+做过分析，请先读附录 D。若手册与包内帮助页（\IRTColdtexttt{?irtc}、
+\IRTColdtexttt{?irtc.mml}）出现不一致，以帮助页为准。}
+\end{tcolorbox}
+
+\vfill
+{\LightFont\fontsize{9.5}{14}\selectfont\color{IRTCslate}%
+ 本手册内示例数据均由 IRTC 仿真生成，不含任何真实被试信息。\par}
+\clearpage
+
+% ------------------------------------------------------------ 引言
+\chapter*{引言}
+\markboth{引言}{}
+
+{\fontsize{11.5}{19}\selectfont\color{IRTCink}
+做过问卷和测验的人都熟悉这样一张表：每一行是一个人，每一列是一道题。
+把它变成结论——哪道题出得好、每个人水平多高、不同人群有没有差异——
+中间隔着的往往不是统计知识，而是一整套工具链。\par}
+
+现有的 IRT 软件包默认使用者是统计程序员：数据要先整理成干净的数值矩阵，
+结果要自己从模型对象里取出来再排版。IRTC 想把这一头一尾也接上，
+同时完整保留底层的专业接口——\textbf{数据进得来，结果出得去，算得快也算得大}。
+
+\vspace{0.05cm}
+\begin{tcolorbox}[enhanced, colback=IRTCpaper, colframe=IRTCpaper, boxrule=0pt,
+  arc=2pt, left=14pt, right=14pt, top=11pt, bottom=11pt,
+  borderline west={2.8pt}{0pt}{IRTCteal}]
+{\fontsize{10.5}{17}\selectfont\color{IRTCink}
+\textbf{这本手册写给四类读者}\par
+\vspace{4pt}
+\textbf{调查与测评人员}——不需要任何编程或统计基础，从「电脑上什么都没装」开始，
+一步步装好软件、整理数据、跑出结果，并读懂每一个数字。\par
+\textbf{统计人员}——完整的专业接口：潜在回归、多组、多维、固定参数、抽样权重，
+以及三套可选的估计引擎。\par
+\textbf{决策者}——三种受众版式的 Word/HTML 报告，结论先行。\par
+\textbf{AI 助手与自动化流水线}——结构冻结的机器可读结果与带错误码的结构化报错。\par}
+\end{tcolorbox}
+
+\textbf{怎么读这本手册？}\quad 只想最快出结果，直接翻第 4 章，十分钟从 Excel 到成品报告；
+完全的新手请从第 0 章顺序读到第 6 章，照做一遍即可独立完成一次分析；
+会用电脑但不懂 IRT 的读者，重点读第 1 章、第 5 章和第 6 章；
+遇到报错查第 8 章，忘了名词查第 9 章，找函数用法查第 14 章。
+每章末尾都有「本章你应该掌握的」小结，用来确认自己有没有读懂。
+
+\textbf{关于这一版。}\quad IRTC 已通过 CRAN 审核并正式上架，
+在 R 中运行 \IRTColdtexttt{install.\allowbreak{}packages("IRTC")} 即可安装。
+1.1.2 是一次正确性修正版：它源于一次真实的全国性调查分析，以及随后用原始数据文件
+做的全量验证，共修正 15 处缺陷，其中三处会静默产生错误结果。题目参数与个人能力估计
+不变，变的是此前算错的那些输出。升级须知见附录 D。
+
+\vspace{0.7cm}
+{\color{IRTCgold}\rule{2.6cm}{1.2pt}}\par
+\vspace{0.35cm}
+{\HeadFont\fontsize{12}{17}\selectfont\color{IRTCink}马崑翔}\par
+{\LightFont\fontsize{10}{15}\selectfont\color{IRTCslate}%
+ IRTC 制作人 / 维护人 \quad · \quad 惟安数据科技（北京）有限公司 \quad · \quad 2026 年 8 月}\par
+\clearpage

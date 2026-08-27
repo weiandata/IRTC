@@ -2,6 +2,14 @@
 # Copyright (C) 2026 WEIAN DATA TECH (Beijing) Co., Ltd.
 # SPDX-License-Identifier: GPL-2.0-or-later
 #
+# SUPERSEDED -- use scripts/verify-release-1.1.2.R for any release from
+# 1.1.2 onward. This script is kept only as the historical record of how
+# 1.1.0 was verified, because the way it verified is itself the lesson: it
+# passes --no-manual to rcmdcheck (step 5 below), which skips building the
+# PDF reference manual. CRAN's incoming pre-tests do build it, and rejected
+# 1.1.0 on a LaTeX failure this script could not see. Its successor never
+# passes --no-manual and asserts the built manual is ASCII.
+#
 # Release verification for IRTC 1.1.0. Run from the repository root:
 #   Rscript scripts/verify-release-1.1.R
 #

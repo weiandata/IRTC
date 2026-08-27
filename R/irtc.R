@@ -256,13 +256,26 @@ irtc <- function(data, model, key=NULL, rules=NULL, q=NULL,
         score_info=data_obj$score_info,
         weights=data_obj$weights,
         rare_categories=rare$info,
-        rare_mode=rare_categories)
+        rare_mode=rare_categories,
+        ## stamped so that a saved fit can be audited later: whether the
+        ## answer key was applied in the data file's own category coding
+        ## depends on the package version that produced it, see
+        ## irtc_audit_scoring()
+        package_version=as.character(utils::packageVersion("IRTC")),
+        recode_map=data_obj$recode_map)
     if (quality) {
-        usability$ctt <- tryCatch(irtc_ctt(resp), error=function(e) NULL)
-        usability$itemfit <- tryCatch(irtc_itemfit(mod, resp=resp),
+        ## Sampling weights reached the MML estimation through 'pweights'; the
+        ## classical statistics, item fit and quality ratings printed alongside
+        ## the IRT parameters have to use them too, or one results table would
+        ## describe two different populations.
+        qw <- fit_args$pweights
+        usability$ctt <- tryCatch(irtc_ctt(resp, weights=qw),
             error=function(e) NULL)
-        usability$quality <- tryCatch(irtc_quality(mod, resp=resp),
+        usability$itemfit <- tryCatch(irtc_itemfit(mod, resp=resp, weights=qw),
             error=function(e) NULL)
+        usability$quality <- tryCatch(irtc_quality(mod, resp=resp, weights=qw),
+            error=function(e) NULL)
+        usability$weighted_statistics <- !is.null(qw)
     }
     mod$usability <- usability
     mod

@@ -1,57 +1,87 @@
 # CRAN comments
 
-## Resubmission
+## Submission: IRTC 1.1.2 (update)
 
-This is a resubmission. The previous submission's incoming pre-tests
-reported 2 ERRORs, 1 WARNING and 1 NOTE. All are addressed:
+This is an update to IRTC 1.1.1, which is on CRAN. It is a correctness
+release: it fixes defects found when the package was used on a national
+survey (85,035 respondents, 10 dichotomous items, three content dimensions,
+sampling weights), and further defects found by validating the whole
+pipeline against that survey's raw SPSS source file. Full user-facing
+account in NEWS.md.
 
-* **ERROR (tests, Windows and Debian).** Two assertions in
-  `tests/testthat/test-print-session.R` matched the literal string
-  `"R version"`. That wording holds for released R but not for r-devel,
-  whose `R.version.string` begins `"R Under development (unstable)"`, so
-  the tests failed on the r-devel check flavors only. The assertions now
-  compare against `R.version.string` itself instead of assuming the
-  released wording. The package code was not at fault and is unchanged.
+### Backward compatibility
 
-* **WARNING (PDF version of manual) and ERROR (PDF version of manual
-  without index).** Three Rd files documented recognised Chinese
-  column-name aliases as literal CJK characters, which have no definition
-  in the LaTeX encoding used to build the manual. The Rd sources are now
-  ASCII: `\usage` writes the affected default arguments as `\uxxxx`
-  escapes (identical R strings, so the code/documentation match still
-  holds), and prose uses a new `\zh` Rd macro (`man/macros/irtc.Rd`) that
-  renders the Chinese characters in the HTML and text help while emitting
-  the equivalent ASCII `\uxxxx` escape in the PDF manual. `R CMD Rd2pdf`
-  now completes with no LaTeX errors, which also clears the related NOTE
-  about `IRTC-manual.tex` being left in the check directory.
+No user code needs to change. Function signatures gain arguments only, all
+with defaults that reproduce the previous behaviour where the previous
+behaviour was correct; the machine-readable schemas advance additively
+(`irtc_results()` 1.1 -> 1.2, the Excel linking workbook 1.0 -> 1.1) with no
+existing column renamed or redefined. One new function is exported
+(`irtc_audit_scoring()`).
 
-* **NOTE (possibly misspelled words in DESCRIPTION).** We believe this is
-  a false positive. "MML" (marginal maximum likelihood), "Rasch" (Georg
-  Rasch, after whom the model is named) and "unidimensional" are standard
-  item response theory terminology; "pre" is the prefix of the hyphenated
-  compound "pre-estimation". All are spelled as intended.
+### Reported numbers do change, deliberately
 
-## Submission: IRTC 1.1.1 (new submission)
+We state this explicitly rather than leave it to be discovered:
 
-This is a new package (not yet on CRAN). Version 1.1.1 contains the verified
-0.1.0 estimation core plus a usability layer (data import including sampling
-weights and Q-matrix alignment, answer-key/partial-credit scoring, data
-checks, quality ratings, Excel export, Word/HTML reports, machine-readable
-results). The estimation core is unchanged from 0.1.0; all 1.0.x/1.1.x
-additions live in the usability layer and are backward compatible. 1.1.1
-differs from the rejected 1.1.0 only in documentation sources and one test
-file (see Resubmission above); no package code changed.
+* The marginal log-likelihood, deviance and all information criteria
+  reported by the streaming estimation engine were offset by a constant
+  `n * ndim * log(1 / h)` (the quadrature weights were a normal density
+  rather than probability mass, so they summed to about `h^-ndim` instead
+  of one). They are now correct and comparable across engines,
+  dimensionalities and node settings. Item parameters, latent covariances
+  and EAP estimates are unchanged, because posterior quantities are
+  invariant to that rescaling.
+* Where case weights are supplied, the classical item statistics, item fit,
+  quality ratings and the norm-referenced person columns are now computed on
+  the weighted sample, as the IRT parameters already were. Constant weights
+  reproduce the previous unweighted values exactly.
+* An answer key is now applied in the category coding of the user's own data
+  file. Previously it was matched against the internally renumbered
+  categories, so a key could select the wrong option without warning.
+  `irtc_audit_scoring()` lets users check an archived analysis without
+  re-running it.
+
+### Memory-safety fix
+
+The C++ E-step of the streaming engine indexed a probability array with the
+raw response code, so `NA_INTEGER` produced an out-of-bounds read and a
+segmentation fault. Missing responses are now handled natively in that
+kernel, and the index is bounds-checked.
 
 ## R CMD check results
 
-0 errors | 0 warnings | 1 note
+0 errors | 0 warnings | 0 notes
 
-* This is a new submission.
+Checked with the PDF manual built (not `--no-manual`):
+`checking PDF version of manual ... OK`. The generated manual contains no
+CJK characters; the Rd sources reaching LaTeX remain ASCII, as arranged for
+1.1.1 via the `\zh` macro in `man/macros/irtc.Rd`.
+
+The only note produced locally is a limitation of this machine's toolchain,
+not of the package: HTML Tidy is too old for HTML validation and package
+'V8' is unavailable for math rendering, so both sub-checks are skipped.
 
 ## Test environments
 
-* Local: macOS Tahoe 26.5.1, R 4.6.0 (aarch64-apple-darwin23)
+* Local: macOS Tahoe 26.5.1, R 4.6.0 (aarch64-apple-darwin23) --
+  `R CMD check --as-cran` with the PDF manual built
+* win-builder, R-release: R 4.6.1 (2026-06-24 ucrt), x86_64-w64-mingw32 --
+  Status OK, 0 notes
+* win-builder, R-devel: R Under development (unstable) (2026-08-24 r90445
+  ucrt), x86_64-w64-mingw32 -- Status OK, 0 notes
 * GitHub Actions: R release on macOS, Windows, and Linux
+
+Test suite: 1298 assertions in 340 test blocks across 62 files, 0 failures,
+0 skips. New regression tests cover each defect above, including agreement
+between the two estimation engines, invariance of the reported
+log-likelihood to the node count, the degenerate-covariance case, and the
+weighted statistics reducing exactly to the unweighted ones under constant
+weights.
+
+## Downstream dependencies
+
+There are no reverse dependencies on CRAN
+(`tools::package_dependencies("IRTC", reverse = TRUE)` returns none), so
+this update cannot break any dependent package.
 
 ## Optional dependencies
 
@@ -81,6 +111,28 @@ source code is not bundled in IRTC.
 Maintainer: Kunxiang Ma <makunxiang@weiandata.com>
 Company contact: <contact@weiandata.com>
 
-## Downstream dependencies
+---
 
-There are currently no downstream dependencies because this is a new package.
+## Previous submission: IRTC 1.1.1 (accepted, 2026-07)
+
+Kept for reference. 1.1.1 was the first CRAN release, itself a resubmission
+after the incoming pre-tests rejected 1.1.0 with 2 ERRORs, 1 WARNING and
+1 NOTE:
+
+* **ERROR (tests, Windows and Debian).** Two assertions in
+  `tests/testthat/test-print-session.R` matched the literal string
+  `"R version"`, which holds for released R but not for r-devel
+  (`"R Under development (unstable)"`). They now compare against
+  `R.version.string` itself. The package code was not at fault.
+
+* **WARNING / ERROR (PDF version of manual).** Three Rd files documented
+  recognised Chinese column-name aliases as literal CJK characters, which
+  have no definition in the LaTeX encoding used to build the manual. The Rd
+  sources were made ASCII: `\usage` writes the affected default arguments as
+  `\uxxxx` escapes, and prose uses the `\zh` macro described above.
+
+* **NOTE (possibly misspelled words in DESCRIPTION).** A false positive.
+  "MML" (marginal maximum likelihood), "Rasch" (Georg Rasch, after whom the
+  model is named) and "unidimensional" are standard item response theory
+  terminology; "pre" is the prefix of the hyphenated compound
+  "pre-estimation". All are spelled as intended.

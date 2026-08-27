@@ -15,9 +15,14 @@ irtc_score <- function(resp, key=NULL, rules=NULL, na_as_wrong=FALSE,
     sheet=1)
 {
     is_irtc_data <- inherits(resp, "irtc_data")
+    recode_map <- NULL
     if (is_irtc_data) {
         data_obj <- resp
         resp <- data_obj$resp
+        ## irtc_read() may have recoded categories to consecutive 0-based
+        ## scores. The answer key is written in the coding of the user's own
+        ## file, so translate it back through that map before matching.
+        recode_map <- data_obj$recode_map
     } else if (is.matrix(resp) || is.data.frame(resp)) {
         resp <- as.data.frame(resp, stringsAsFactors=FALSE)
     } else {
@@ -50,6 +55,13 @@ irtc_score <- function(resp, key=NULL, rules=NULL, na_as_wrong=FALSE,
         rules <- irtc_score_read_rules(rules, sheet=sheet)
     }
 
+    if (!is.null(recode_map)) {
+        tr <- irtc_score_apply_recode(key, partial_map, rules, recode_map)
+        key <- tr$key
+        partial_map <- tr$partial
+        rules <- tr$rules
+    }
+
     if (!is.null(rules)) {
         scored <- irtc_score_rules(resp, rules)
         score_info <- list(
@@ -74,6 +86,86 @@ irtc_score <- function(resp, key=NULL, rules=NULL, na_as_wrong=FALSE,
     attr(out, "scoring_log") <- scored$log
     attr(out, "score_info") <- score_info
     out
+}
+
+## Translate answers written in the data file's original category coding into
+## the consecutive 0-based coding irtc_read() produced. `map` is a named list:
+## map[[item]] holds the original categories in ascending order, so an original
+## value v becomes match(v, map[[item]]) - 1.
+##
+## Answers that do not appear among an item's observed categories cannot be
+## translated. That is either a wrong key or an option nobody chose; both make
+## every response to that item score 0, so it is reported rather than applied.
+irtc_score_recode_answer <- function(item, answers, map, unmatched)
+{
+    categories <- map[[item]]
+    if (is.null(categories) || length(answers) == 0L) {
+        return(list(answers=answers, unmatched=unmatched))
+    }
+    original <- suppressWarnings(as.numeric(irtc_score_normalize(answers)))
+    idx <- match(original, categories)
+    bad <- is.na(idx) & !is.na(answers)
+    if (any(bad)) {
+        unmatched <- c(unmatched, stats::setNames(
+            list(as.character(answers)[bad]), item))
+    }
+    out <- as.character(answers)
+    out[!is.na(idx)] <- as.character(idx[!is.na(idx)] - 1L)
+    list(answers=out, unmatched=unmatched)
+}
+
+## Apply the recode map to a key, its partial-answer lists and a rules table.
+irtc_score_apply_recode <- function(key, partial, rules, map)
+{
+    unmatched <- list()
+    if (!is.null(key) && !is.null(names(key))) {
+        key <- unlist(key)
+        for (item in intersect(names(key), names(map))) {
+            r <- irtc_score_recode_answer(item, key[[item]], map, unmatched)
+            key[[item]] <- r$answers
+            unmatched <- r$unmatched
+        }
+    }
+    if (!is.null(partial)) {
+        for (item in intersect(names(partial), names(map))) {
+            r <- irtc_score_recode_answer(item, partial[[item]], map, unmatched)
+            partial[[item]] <- r$answers
+            unmatched <- r$unmatched
+        }
+    }
+    if (!is.null(rules)) {
+        rules <- as.data.frame(rules, stringsAsFactors=FALSE)
+        if (all(c("item", "response") %in% colnames(rules))) {
+            for (item in intersect(unique(rules$item), names(map))) {
+                sel <- rules$item == item
+                r <- irtc_score_recode_answer(item, rules$response[sel], map,
+                    unmatched)
+                rules$response[sel] <- r$answers
+                unmatched <- r$unmatched
+            }
+        }
+    }
+    if (length(unmatched) > 0L) {
+        items <- names(unmatched)
+        detail <- paste0(items, "=",
+            vapply(unmatched, function(z) paste(z, collapse="/"), character(1L)))
+        irtc_warn(code="W205",
+            en=paste0("Answer(s) not among the responses actually given for ",
+                "the item, so nobody can score correct on them: ",
+                paste(detail, collapse=", "), "."),
+            zh=paste0("\u4ee5\u4e0b\u7b54\u6848\u5728\u8be5\u9898\u7684\u5b9e\u9645\u4f5c\u7b54\u4e2d\u4ece\u672a\u51fa\u73b0\uff0c",
+                "\u56e0\u6b64\u6ca1\u6709\u4efb\u4f55\u4eba\u4f1a\u88ab\u5224\u4e3a\u7b54\u5bf9\uff1a",
+                paste(detail, collapse="\u3001"), "\u3002"),
+            fix_en=paste0("Check the answer key against the codes used in the ",
+                "data file. Write the key in the file's own coding; irtc_read() ",
+                "may have renumbered the categories, and the key is translated ",
+                "back automatically."),
+            fix_zh=paste0("\u8bf7\u6838\u5bf9\u7b54\u6848\u952e\u4e0e\u6570\u636e\u6587\u4ef6\u4e2d\u7684\u9009\u9879\u7f16\u7801\u3002",
+                "\u7b54\u6848\u952e\u5e94\u6309\u6570\u636e\u6587\u4ef6\u81ea\u8eab\u7684\u7f16\u7801\u4e66\u5199\uff1b",
+                "irtc_read() \u53ef\u80fd\u5df2\u91cd\u7f16\u7c7b\u522b\u7f16\u53f7\uff0c\u7a0b\u5e8f\u4f1a\u81ea\u52a8\u6362\u7b97\u3002"),
+            class="irtc_warning_scoring", data=list(unmatched=unmatched))
+    }
+    list(key=key, partial=partial, rules=rules)
 }
 
 ## Is this argument a file path rather than an in-memory key/rules object?

@@ -1,5 +1,103 @@
 # IRTC Release Status
 
+## 1.1.2 (verified 2026-08-27, not yet submitted)
+
+Correctness release for the multidimensional streaming estimation path and
+the weighted-statistics chain, prompted by a production survey analysis
+(85,035 respondents, 10 dichotomous items, three content dimensions,
+sampling weights) and by a subsequent full-pipeline validation against the
+raw 48 MB SPSS source file. 15 defects fixed. Finding-by-finding account,
+including the reasoning behind each fix and the three feature requests
+deliberately deferred: `docs/internal/1.1.2-field-report-disposition-zh.md`.
+
+Three of the fixes concern output that was **silently wrong**:
+
+- the marginal log-likelihood and every information criterion reported by
+  the streaming engine were offset by `n * ndim * log(1 / h)` (quadrature
+  weights were density, not probability mass), invalidating any comparison
+  across dimensionalities or engines;
+- item parameter tables read the slope from dimension 1 regardless of the
+  item's loading dimension, so most items of a multidimensional model were
+  exported with `slope_a = 0` and `difficulty_b = NA` — in the workbook
+  documented for cross-year linking;
+- an answer key was applied to the wrong option whenever `irtc_read()` had
+  renumbered an item's categories, which is the default for any file coded
+  from 1. On the validation data this made 655,917 of 850,360 scored cells
+  wrong, with no warning and plausible-looking pass rates.
+
+Also fixed: a segfault on `NA` in the streaming E-step; sign-flipped
+log-likelihood under a degenerate latent covariance; unweighted classical
+statistics, item fit, quality ratings and person norms in weighted analyses;
+lost `pid` and case weights on the streaming path; person IDs written in
+scientific notation; streaming fits storing neither response data nor item
+names. Added `irtc_audit_scoring()` for triaging archived analyses, an
+`E409` memory guard for the grid path, and a `W427` warning when latent
+correlations reach the boundary.
+
+Item parameters, latent covariances and EAP estimates are unchanged; the
+quadrature renormalisation cancels out of every posterior quantity.
+
+Verification:
+
+- Local (macOS, R 4.6.0 aarch64) `R CMD check --as-cran` **with the PDF
+  manual built** (not `--no-manual`, which is what hid the 1.1.0 failure):
+  0 ERROR, 0 WARNING, and one NOTE that is purely local toolchain
+  ("Skipping checking HTML validation: 'tidy' doesn't look like recent
+  enough HTML Tidy"; "Skipping checking math rendering: package 'V8'
+  unavailable"). No package NOTE.
+- `checking PDF version of manual ... OK`. The generated `IRTC-manual.pdf`
+  contains **0 CJK characters** and retains the `\uxxxx` escapes, so the
+  1.1.1 Rd/LaTeX fix still holds with the new Rd sections.
+- Test suite: 340 blocks, **1298 assertions, 0 failures, 0 skips** across
+  62 files, including a new `test-streaming-quadrature.R` (25 blocks) that
+  locks down every finding above.
+- Reproduction of the originating analysis: the unidimensional baseline
+  matches the analysts' published figures to every digit (deviance
+  968473.3, AIC 968513.3, BIC 968700.3, EAP.rel 0.7223; all 10 items'
+  `slope_a` / `difficulty_b` identical to 4 decimals).
+- Full-pipeline validation from the raw `.sav` (85,281 rows x 243 columns):
+  import in three formats gives identical response matrices, ids and
+  weights; scoring against the derived answer key matches the SPSS-scored
+  variables on **0 of 850,360 cells in disagreement**; both models, all
+  three report audiences in Word and HTML, all four plot types and every
+  export path complete. The `.sav` route reproduces the deviance, AIC and
+  BIC of the analysts' own CSV pipeline exactly.
+
+- win-builder, both Windows flavors, on the submission tarball built from a
+  clean `git archive HEAD` export:
+  - R-release `R version 4.6.1 (2026-06-24 ucrt)`, x86_64-w64-mingw32:
+    **Status OK**, 0 notes. `checking PDF version of manual` OK [12s];
+    `checking tests` OK [238s]. Install 43s, check 319s.
+  - R-devel `R Under development (unstable) (2026-08-24 r90445 ucrt)`,
+    x86_64-w64-mingw32: **Status OK**, 0 notes (only the routine
+    "specified C++17" info line). `checking PDF version of manual` OK [13s];
+    `checking tests` OK [16m]; `checking examples` OK. Install 45s, check
+    1105s. This is the flavor that caught the 1.1.0 test failure, so it is
+    the one that confirms the released-R wording assumption is gone.
+
+  Note on check time: 1105s total on win-builder r-devel, of which 960s is
+  the test suite, against 326s for the tests in the 1.1.1 run. The same
+  suite takes 61s locally (macOS, R 4.6.0, aarch64), so most of the gap is
+  the environment rather than the tests; part of the increase is genuine
+  (1298 assertions against 1191) and part may be machine load, since a
+  single win-builder sample cannot separate the two. CRAN's guidance is
+  that a check should take under 10 minutes on its own machines, which are
+  faster than win-builder. Status came back OK, so nothing was flagged
+  automatically, but if a reviewer raises timing the remedy is to guard the
+  heaviest streaming fits in `test-sp5-robustness.R` (22s locally, the
+  slowest file) and `test-streaming-quadrature.R` with `skip_on_cran()`.
+  The package currently uses no `skip_on_cran()` anywhere, i.e. CRAN runs
+  everything.
+
+Verification is reproducible: `Rscript scripts/verify-release-1.1.2.R` runs
+all of the above as a gate and fails on any shortfall. Unlike its 1.1.0
+predecessor it never passes `--no-manual`, and it asserts that the built
+manual is free of CJK characters, so the failure mode described in the 1.1.0
+entry below cannot recur silently.
+
+Verification is complete. The tarball at
+`IRTC_1.1.2.tar.gz` (built from `git archive HEAD`) is ready to submit.
+
 ## 1.1.1 (verified 2026-07-17, accepted by CRAN 2026-07)
 
 **Accepted and published on CRAN** — the first CRAN release of IRTC.

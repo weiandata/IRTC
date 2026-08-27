@@ -1,0 +1,236 @@
+% =====================================================================
+%  IRTC 中文使用手册 —— PDF 视觉设计（XeLaTeX）
+%  惟安数据科技（北京）有限公司
+% =====================================================================
+
+% ---------------------------------------------------------------- 调色板
+\definecolor{IRTCink}{HTML}{102A43}      % 主色：深靛蓝
+\definecolor{IRTCinkdeep}{HTML}{081726}  % 封面底色
+\definecolor{IRTCinkmid}{HTML}{16375A}   % 封面渐变
+\definecolor{IRTCgold}{HTML}{C8912F}     % 强调：铜金
+\definecolor{IRTCgoldsoft}{HTML}{E3B65C}
+\definecolor{IRTCteal}{HTML}{1B7A8C}     % 次强调：青
+\definecolor{IRTCslate}{HTML}{51637A}    % 辅助文字
+\definecolor{IRTCmist}{HTML}{EDF2F7}     % 浅底
+\definecolor{IRTCpaper}{HTML}{F7F4EE}
+\definecolor{IRTCrule}{HTML}{D5DEE7}
+\definecolor{IRTCcodebg}{HTML}{F5F7FA}
+\definecolor{IRTCcodeframe}{HTML}{DEE5EC}
+\definecolor{IRTCcodeink}{HTML}{16506B}
+
+% ---------------------------------------------------------------- 宏包
+\usepackage{tikz}
+\usetikzlibrary{calc}
+\usepackage{eso-pic}
+\usepackage{tcolorbox}
+\tcbuselibrary{skins,breakable}
+\usepackage[explicit]{titlesec}
+\usepackage{titletoc}
+\usepackage{fancyhdr}
+\usepackage{enumitem}
+\usepackage{colortbl}
+\usepackage{newunicodechar}
+\usepackage{ragged2e}
+\usepackage{needspace}
+
+% ---------------------------------------------------------------- 字体
+% 正文：宋体 + Palatino；标题：苹方 + Avenir Next；代码：Menlo
+\newfontfamily\LatinDisplay{Avenir Next}[
+  UprightFont = * Medium, BoldFont = * Demi Bold, ItalicFont = * Italic]
+\newCJKfontfamily\CJKdisplay{PingFang SC}[BoldFont = PingFang SC Semibold]
+\newCJKfontfamily\CJKlight{PingFang SC}[UprightFont = PingFang SC Light,
+  BoldFont = PingFang SC Regular]
+\newcommand{\HeadFont}{\LatinDisplay\CJKdisplay}
+\newcommand{\LightFont}{\LatinDisplay\CJKlight}
+
+% 缺字回退：箭头与带圈数字取自宋体
+\newfontfamily\SymFallback{Songti SC}
+\newunicodechar{→}{{\SymFallback\char"2192}}
+\newunicodechar{↔}{{\SymFallback\char"2194}}
+\newunicodechar{①}{{\SymFallback\char"2460}}
+\newunicodechar{②}{{\SymFallback\char"2461}}
+\newunicodechar{③}{{\SymFallback\char"2462}}
+\newunicodechar{④}{{\SymFallback\char"2463}}
+\newunicodechar{⑤}{{\SymFallback\char"2464}}
+\newunicodechar{⑥}{{\SymFallback\char"2465}}
+\newunicodechar{⑦}{{\SymFallback\char"2466}}
+\newunicodechar{⑧}{{\SymFallback\char"2467}}
+\newunicodechar{⑨}{{\SymFallback\char"2468}}
+
+% ---------------------------------------------------------------- 版面
+\linespread{1.22}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.5\baselineskip}
+\setlist[itemize]{leftmargin=1.35em, itemsep=2pt, topsep=3pt, parsep=0pt}
+\setlist[enumerate]{leftmargin=1.6em, itemsep=2pt, topsep=3pt, parsep=0pt}
+\emergencystretch=1.5em
+\sloppy
+\widowpenalty=10000
+\clubpenalty=10000
+
+% 行内代码着色
+\let\IRTColdtexttt\texttt
+\renewcommand{\texttt}[1]{{\color{IRTCcodeink}\IRTColdtexttt{#1}}}
+
+% ---------------------------------------------------------------- 章首页
+% 章首整页顶部为深色横幅：右侧压一个巨大的浅色章号，横幅内是章标签与章标题。
+% 标签与标题都画在 TikZ 覆盖层里，位置与横幅严格对齐，正文另起于横幅之下。
+\newcommand{\IRTCchapterhead}[3]{%
+  \AddToShipoutPictureBG*{%
+    \begin{tikzpicture}[remember picture, overlay]
+      \fill[IRTCink] (current page.north west)
+        rectangle ([yshift=-6.2cm]current page.north east);
+      \fill[IRTCgold] ([yshift=-6.2cm]current page.north west)
+        rectangle ([yshift=-6.32cm]current page.north east);
+      \node[anchor=north east, text=white!17!IRTCink,
+            font=\LatinDisplay\fontsize{92}{92}\selectfont]
+        at ([xshift=-1.5cm, yshift=-0.55cm]current page.north east) {#1};
+      \node[anchor=north west, text=IRTCgoldsoft,
+            font=\HeadFont\fontsize{11.5}{14}\selectfont]
+        at ([xshift=2.4cm, yshift=-2.95cm]current page.north west) {#2};
+      \node[anchor=north west, text=white, text width=13.4cm, align=flush left,
+            font=\HeadFont\fontsize{23}{31}\selectfont]
+        at ([xshift=2.38cm, yshift=-3.75cm]current page.north west) {#3};
+    \end{tikzpicture}%
+  }%
+}
+
+\titleformat{\chapter}[display]{}{}{0pt}
+  {\IRTCchapterhead{\thechapter}{第\,\thechapter\,章}{#1}%
+   \markboth{第\,\thechapter\,章\quad #1}{}}
+\titleformat{name=\chapter, numberless}[display]{}{}{0pt}
+  {\IRTCchapterhead{}{IRTC 使用手册 · 中文版}{#1}\markboth{#1}{}}
+\titlespacing*{\chapter}{0pt}{0pt}{86pt}
+\titlespacing*{name=\chapter, numberless}{0pt}{0pt}{86pt}
+
+% ---------------------------------------------------------------- 各级标题
+\titleformat{\section}
+  {\HeadFont\fontsize{15}{20}\selectfont\color{IRTCink}\raggedright}
+  {}{0pt}
+  {\textcolor{IRTCgold}{\rule[-0.05em]{3pt}{0.92em}}\hspace{0.6em}#1}
+\titlespacing*{\section}{0pt}{20pt plus 4pt}{7pt}
+
+\titleformat{\subsection}
+  {\HeadFont\fontsize{12.5}{17}\selectfont\color{IRTCteal}\raggedright}
+  {}{0pt}{#1}
+\titlespacing*{\subsection}{0pt}{14pt plus 3pt}{5pt}
+
+\titleformat{\subsubsection}
+  {\HeadFont\fontsize{11.5}{15}\selectfont\color{IRTCslate}\raggedright}
+  {}{0pt}{#1}
+\titlespacing*{\subsubsection}{0pt}{11pt plus 2pt}{4pt}
+
+% ---------------------------------------------------------------- 页眉页脚
+\newcommand{\IRTCpagepill}{%
+  \tikz[baseline=(x.base)]{%
+    \node[fill=IRTCink, text=white, rounded corners=2.5pt,
+          inner xsep=8pt, inner ysep=3.5pt,
+          font=\LatinDisplay\fontsize{9}{9}\selectfont] (x) {\thepage};}}
+
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\headrule}{\ifdim\headrulewidth>0pt
+  {\color{IRTCrule}\hrule height \headrulewidth}\fi}
+\fancyhead[L]{\LightFont\fontsize{8.5}{10}\selectfont\color{IRTCslate}\leftmark}
+\fancyhead[R]{\LightFont\fontsize{8.5}{10}\selectfont\color{IRTCslate}%
+  IRTC 使用手册 · V1.1.2}
+\fancyfoot[C]{\IRTCpagepill}
+
+\fancypagestyle{plain}{%
+  \fancyhf{}%
+  \renewcommand{\headrulewidth}{0pt}%
+  \fancyfoot[C]{\IRTCpagepill}}
+
+\fancypagestyle{IRTCblank}{%
+  \fancyhf{}\renewcommand{\headrulewidth}{0pt}}
+
+% ---------------------------------------------------------------- 目录
+\renewcommand{\contentsname}{目录}
+\setcounter{tocdepth}{1}
+\titlecontents{chapter}[0em]
+  {\addvspace{11pt}\HeadFont\fontsize{12}{15}\selectfont\color{IRTCink}}
+  {\makebox[2.1em][l]{\color{IRTCgold}\thecontentslabel}}
+  {}
+  {\hfill\normalfont\LatinDisplay\fontsize{10}{12}\selectfont
+   \color{IRTCslate}\thecontentspage}
+\titlecontents{section}[2.1em]
+  {\addvspace{1.5pt}\LightFont\fontsize{9.5}{12}\selectfont\color{IRTCslate}}
+  {}{}
+  {\titlerule*[0.6pc]{\color{IRTCrule}.}%
+   \normalfont\LatinDisplay\fontsize{9}{11}\selectfont\color{IRTCslate}\thecontentspage}
+
+% ---------------------------------------------------------------- 引用框
+\renewenvironment{quote}
+  {\begin{tcolorbox}[breakable, enhanced, colback=IRTCmist, colframe=IRTCmist,
+     boxrule=0pt, arc=1.5pt, left=11pt, right=11pt, top=8pt, bottom=8pt,
+     borderline west={2.8pt}{0pt}{IRTCteal},
+     before skip=9pt, after skip=11pt]\small}
+  {\end{tcolorbox}}
+
+% ---------------------------------------------------------------- 代码块
+\makeatletter
+\AtBeginDocument{%
+  \@ifundefined{Shaded}{}{%
+    \renewenvironment{Shaded}
+      {\begin{tcolorbox}[breakable, enhanced, colback=IRTCcodebg,
+         colframe=IRTCcodeframe, boxrule=0.5pt, arc=2.5pt,
+         left=9pt, right=9pt, top=7pt, bottom=7pt,
+         borderline west={2.2pt}{0pt}{IRTCgold},
+         before skip=9pt, after skip=11pt]\small}
+      {\end{tcolorbox}}}%
+}
+\makeatother
+
+\DefineVerbatimEnvironment{verbatim}{Verbatim}{%
+  fontsize=\small, frame=leftline, framerule=2.2pt,
+  rulecolor=\color{IRTCteal}, xleftmargin=11pt, framesep=9pt,
+  formatcom=\color{IRTCink}}
+
+% ---------------------------------------------------------------- 表格
+\renewcommand{\arraystretch}{1.32}
+\arrayrulecolor{IRTCrule}
+\setlength{\arrayrulewidth}{0.5pt}
+
+% ---------------------------------------------------------------- 尾页
+\newcommand{\IRTCendpage}{%
+  \cleardoublepage
+  \thispagestyle{IRTCblank}%
+  \AddToShipoutPictureBG*{%
+    \begin{tikzpicture}[remember picture, overlay]
+      \shade[top color=IRTCinkdeep, bottom color=IRTCinkmid]
+        (current page.south west) rectangle (current page.north east);
+      \foreach \i in {0,1,2}{
+        \draw[IRTCgoldsoft!18!IRTCinkmid, line width=0.9pt]
+          ([xshift=2cm, yshift=4.2cm+\i*0.9cm]current page.south west)
+          .. controls ([xshift=8cm, yshift=4.2cm+\i*0.9cm]current page.south west)
+             and ([xshift=10cm, yshift=7.4cm+\i*0.9cm]current page.south west)
+          .. ([xshift=18cm, yshift=7.6cm+\i*0.9cm]current page.south west);}
+      \fill[IRTCgold] ([xshift=2.4cm, yshift=-6.4cm]current page.north west)
+        rectangle ([xshift=4.0cm, yshift=-6.47cm]current page.north west);
+    \end{tikzpicture}}%
+  \vspace*{5.4cm}
+  {\LatinDisplay\fontsize{40}{44}\selectfont\color{white}IRTC}\par
+  \vspace{0.55cm}
+  {\HeadFont\fontsize{15}{20}\selectfont\color{white}%
+   项目反应理论分析工具包}\par
+  \vspace{0.25cm}
+  {\LightFont\fontsize{10.5}{15}\selectfont\color{IRTCgoldsoft}%
+   Marginal Maximum Likelihood Estimation for Item Response Models}\par
+  \vspace{1.5cm}
+  {\LightFont\fontsize{10.5}{18}\selectfont\color{white}%
+   版本 1.1.1（2026-07-17）· 已发布于 CRAN\par
+   制作人 / 维护人：马崑翔（Kunxiang Ma）\par
+   makunxiang@weiandata.com\par
+   版权所有 \copyright{} 2026 惟安数据科技（北京）有限公司\par
+   许可证 GPL (>= 2)\par}
+  \vspace{1.2cm}
+  {\LightFont\fontsize{10}{16}\selectfont\color{IRTCgoldsoft}%
+   项目主页 \quad https://github.com/weiandata/IRTC\par
+   CRAN \quad\ \  https://CRAN.R-project.org/package=IRTC\par
+   问题反馈 \quad https://github.com/weiandata/IRTC/issues\par}
+  \vfill
+  {\LightFont\fontsize{9.5}{14}\selectfont\color{white}%
+   本手册随软件版本更新；如手册与包内帮助页（\IRTColdtexttt{?irtc}）不一致，以帮助页为准。\par}
+  \vspace{1.2cm}
+  \clearpage}

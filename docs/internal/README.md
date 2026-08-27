@@ -16,6 +16,14 @@ distributed to CRAN users.
 - [V1.0 release plan (中文)](v1.0-release-plan-zh.md)
 - [V1.1 plan (中文)](v1.1-plan-zh.md)
 
+## Field reports
+
+- [1.1.2 field-report disposition (中文)](1.1.2-field-report-disposition-zh.md)
+  — finding-by-finding response to the defect record from the 2026-08 AI
+  literacy survey analysis (85,035 respondents, three dimensions, sampling
+  weights). Nine reported defects, what was done about each, and the
+  verification evidence.
+
 ## CRAN
 
 - [CRAN submission guide (中文)](cran-submission-guide-zh.md) — how the

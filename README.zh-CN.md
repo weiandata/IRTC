@@ -12,6 +12,11 @@ R 语言的项目反应理论（IRT）分析包：**从一张表格直接到一�
 
 > **当前状态**：已在 CRAN 上架，直接用 `install.packages("IRTC")` 安装。
 > 接口已稳定，1.1.x 向后兼容 1.0。
+>
+> **1.1.2 是正确性修正版。** 其中三处修正涉及 1.1.1 及更早版本中**会静默产生错误结果**的
+> 输出：多维流式引擎报告的对数似然与信息准则、多维模型的题目参数表，以及答案键实际
+> 作用的选项。若你用早期版本做过分析，请看 [NEWS.md](NEWS.md)；用过 `key=` 计分的，
+> 用 `irtc_audit_scoring()` 排查。
 
 ## 实际效果
 
@@ -108,11 +113,14 @@ if (chk$ok) {
 
 报错是结构化条件对象，带错误码、原因和修复建议。
 
+给了抽样权重的话，权重会贯穿整条链路：IRT 估计、经典统计量、题目拟合、质量评级
+以及个人的百分位与 T 分数，全部描述同一个加权人群。
+
 完整示例见 [examples/basic-usage.R](examples/basic-usage.R)。
 
 ## 文档
 
-- [中文使用手册](docs/manuals/IRTC手册-中文-V1.1.0.md) —
+- [中文使用手册](docs/manuals/IRTC手册-中文-V1.1.2.md) —
   [English manual](docs/manuals/IRTC-Manual-English.md)
 - 在 R 里：`?irtc`、`?irtc.mml`、`help(package = "IRTC")`
 - [文档索引](docs/README.md)
