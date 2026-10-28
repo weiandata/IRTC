@@ -1,5 +1,9 @@
 # IRTC
 
+> CRAN status verified on 2026-10-28: [the published version is 1.1.1](https://cran.r-project.org/web/packages/IRTC/index.html)
+> (2026-07-24). This checkout is 1.1.2; its fixes and new APIs are not yet
+> available through `install.packages("IRTC")`.
+
 **English** | [简体中文](README.zh-CN.md)
 
 [![CRAN status](https://www.r-pkg.org/badges/version/IRTC)](https://CRAN.R-project.org/package=IRTC)

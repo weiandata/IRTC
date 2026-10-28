@@ -1,5 +1,10 @@
 # IRTC Release Status
 
+CRAN status verified on 2026-10-28: [1.1.1 remains the published version](https://cran.r-project.org/web/packages/IRTC/index.html),
+published on 2026-07-24. Local 1.1.2 is not published on CRAN.
+The submission and check records below describe their recorded dates;
+the public package page does not establish whether an update is in review.
+
 ## 1.1.2 (verified 2026-08-27, not yet submitted)
 
 Correctness release for the multidimensional streaming estimation path and

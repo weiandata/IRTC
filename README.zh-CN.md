@@ -1,5 +1,9 @@
 # IRTC
 
+> CRAN 状态核验（2026-10-28）：[当前正式版为 1.1.1](https://cran.r-project.org/web/packages/IRTC/index.html)，
+> 发布于 2026-07-24。本地版本为 1.1.2，其修复及新增接口尚不能通过
+> `install.packages("IRTC")` 获取。
+
 [English](README.md) | **简体中文**
 
 [![CRAN status](https://www.r-pkg.org/badges/version/IRTC)](https://CRAN.R-project.org/package=IRTC)

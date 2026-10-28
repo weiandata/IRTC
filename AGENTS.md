@@ -11,7 +11,11 @@ WAEF.
 
 # IRTC agent handoff
 
-Last updated: 2026-07-17. Current work: **V1.1** on branch `v1.1-dev`.
+Last updated: 2026-10-28. Local version: **1.1.2**.
+CRAN currently publishes **1.1.1** (2026-07-24), verified at the
+[official package page](https://cran.r-project.org/web/packages/IRTC/index.html).
+Version 1.1.2 is locally implemented but not published on CRAN.
+The V1.1 implementation notes below are historical, not current release status.
 
 ## Project state
 
